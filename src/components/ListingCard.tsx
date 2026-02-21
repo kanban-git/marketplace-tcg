@@ -3,6 +3,7 @@ import type { Listing } from "@/data/mockListings";
 
 interface Props {
   listing: Listing;
+  onClick?: () => void;
 }
 
 const conditionColor: Record<string, string> = {
@@ -12,9 +13,12 @@ const conditionColor: Record<string, string> = {
   "Heavily Played": "text-orange-400 bg-orange-400/10 border-orange-400/20",
 };
 
-const ListingCard = ({ listing }: Props) => {
+const ListingCard = ({ listing, onClick }: Props) => {
   return (
-    <article className="group relative overflow-hidden rounded-xl border border-border bg-gradient-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow">
+    <article
+      onClick={onClick}
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-gradient-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow"
+    >
       {listing.featured && (
         <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
           <Star className="h-3 w-3" />

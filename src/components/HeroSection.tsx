@@ -2,8 +2,22 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import heroBg from "@/assets/hero-bg.jpg";
 
-const HeroSection = () => {
+interface Props {
+  onSearch: (query: string) => void;
+}
+
+const HeroSection = ({ onSearch }: Props) => {
   const [query, setQuery] = useState("");
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (query.trim()) onSearch(query.trim());
+  };
+
+  const handleTagClick = (tag: string) => {
+    setQuery(tag);
+    onSearch(tag);
+  };
 
   return (
     <section className="relative overflow-hidden">
@@ -21,7 +35,10 @@ const HeroSection = () => {
           O maior marketplace de cartas colecionáveis do Brasil. Pokémon, Magic, Yu-Gi-Oh! e muito mais.
         </p>
 
-        <div className="mx-auto mt-8 flex max-w-lg animate-fade-in items-center gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-card [animation-delay:200ms]">
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto mt-8 flex max-w-lg animate-fade-in items-center gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-card [animation-delay:200ms]"
+        >
           <Search className="ml-4 h-5 w-5 shrink-0 text-muted-foreground" />
           <input
             type="text"
@@ -30,20 +47,24 @@ const HeroSection = () => {
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 bg-transparent px-3 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          <button className="m-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+          <button
+            type="submit"
+            className="m-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
             Buscar
           </button>
-        </div>
+        </form>
 
         <div className="mt-6 flex animate-fade-in flex-wrap items-center justify-center gap-2 [animation-delay:300ms]">
           <span className="text-xs text-muted-foreground">Popular:</span>
           {["Charizard", "Black Lotus", "Pikachu VMAX", "Exodia"].map((tag) => (
-            <span
+            <button
               key={tag}
+              onClick={() => handleTagClick(tag)}
               className="cursor-pointer rounded-full border border-border bg-secondary px-3 py-1 text-xs text-secondary-foreground transition-colors hover:border-primary/50 hover:text-primary"
             >
               {tag}
-            </span>
+            </button>
           ))}
         </div>
       </div>
