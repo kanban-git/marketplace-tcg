@@ -5,7 +5,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 import ListingCard from "@/components/ListingCard";
 import ListingDetailDialog from "@/components/ListingDetailDialog";
 import Footer from "@/components/Footer";
-import { mockListings, type Listing } from "@/data/mockListings";
+import { type Listing } from "@/data/mockListings";
 
 const Index = () => {
   const [category, setCategory] = useState("all");
@@ -29,15 +29,8 @@ const Index = () => {
     scrollToListings();
   };
 
-  const filtered = mockListings.filter((l) => {
-    const matchesCategory = category === "all" || l.category === category;
-    const matchesSearch =
-      !search ||
-      l.title.toLowerCase().includes(search.toLowerCase()) ||
-      l.game.toLowerCase().includes(search.toLowerCase()) ||
-      l.seller.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // TODO: Replace with real Supabase query
+  const filtered: Listing[] = [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -48,7 +41,7 @@ const Index = () => {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-2xl font-bold text-foreground">
-              {search ? `Resultados para "${search}"` : "Anúncios recentes"}
+              {search ? `Resultados para "${search}"` : "Anúncios"}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {filtered.length} cartas disponíveis

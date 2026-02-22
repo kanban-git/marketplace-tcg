@@ -32,7 +32,7 @@ const HeroSection = ({ onSearch }: Props) => {
           <span className="text-gradient-gold">cartas TCG</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl animate-fade-in text-base text-muted-foreground [animation-delay:100ms] md:text-lg">
-          O maior marketplace de cartas colecionáveis do Brasil. Pokémon, Magic, Yu-Gi-Oh! e muito mais.
+          Seu hub de cartas colecionáveis. Pokémon, Magic, Yu-Gi-Oh! e muito mais.
         </p>
 
         <form
