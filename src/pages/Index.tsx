@@ -41,7 +41,7 @@ const Index = () => {
     condition: "Near Mint" as const,
     game: "Pokémon",
     category: "pokemon",
-    seller: card.rarity || "Unknown",
+    seller: card.rarity && card.rarity !== "Unknown" ? card.rarity : card.supertype || "Pokémon",
     location: card.set_name || card.set_id || "",
     collectionNumber: card.collection_number,
   }));
