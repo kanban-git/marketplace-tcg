@@ -9,10 +9,10 @@ const Footer = ({ onCategorySelect }: Props) => (
         <div>
           <button onClick={() => onCategorySelect("all")} className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="font-display text-sm font-bold text-primary-foreground">TH</span>
+              <span className="font-display text-sm font-bold text-primary-foreground">TG</span>
             </div>
             <span className="font-display text-lg font-bold text-foreground">
-              TCH<span className="text-primary">Hub</span>
+              TCG<span className="text-primary">Hub</span>
             </span>
           </button>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -49,7 +49,7 @@ const Footer = ({ onCategorySelect }: Props) => (
       </div>
 
       <div className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-        © 2026 TCHHub. Todos os direitos reservados.
+        © 2026 TCGHub. Todos os direitos reservados.
       </div>
     </div>
   </footer>
