@@ -28,8 +28,17 @@ Deno.serve(async (req) => {
     const syncId = syncRecord.id;
 
     // Fetch sets from Pokémon TCG API
-    const setsRes = await fetch("https://api.pokemontcg.io/v2/sets?orderBy=releaseDate&pageSize=20");
-    if (!setsRes.ok) throw new Error(`Sets API error: ${setsRes.status}`);
+    const setsRes = await fetch("https://api.pokemontcg.io/v2/sets?pageSize=20", {
+      headers: { 
+        "Accept": "application/json",
+        "User-Agent": "PokemonTCGApp/1.0",
+      },
+    });
+    if (!setsRes.ok) {
+      const errBody = await setsRes.text();
+      console.error("Sets API response:", setsRes.status, errBody);
+      throw new Error(`Sets API error: ${setsRes.status} - ${errBody.substring(0, 200)}`);
+    }
     const setsData = await setsRes.json();
     const sets = setsData.data;
 
