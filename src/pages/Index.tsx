@@ -1,103 +1,91 @@
 import { useState, useRef } from "react";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
-import CategoryFilter from "@/components/CategoryFilter";
-import ListingCard from "@/components/ListingCard";
-import ListingDetailDialog from "@/components/ListingDetailDialog";
+import SetsGrid from "@/components/SetsGrid";
+import TrendingCards from "@/components/TrendingCards";
+import CardGrid from "@/components/CardGrid";
 import Footer from "@/components/Footer";
-import { type Listing } from "@/data/mockListings";
-import { useCards, type Card } from "@/hooks/useCards";
+import { useCards } from "@/hooks/useCards";
 
 const Index = () => {
-  const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const listingsRef = useRef<HTMLDivElement>(null);
 
   const scrollToListings = () => {
     listingsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleCategoryFromNav = (cat: string) => {
-    setCategory(cat);
-    setSearch("");
-    scrollToListings();
-  };
-
   const handleSearch = (query: string) => {
     setSearch(query);
-    setCategory("all");
     scrollToListings();
   };
 
-  const { data: cards = [], isLoading } = useCards(category, search);
+  const clearSearch = () => setSearch("");
 
-  // Convert cards to Listing format for existing components
-  const filtered: Listing[] = cards.map((card) => ({
-    id: card.id,
-    title: card.name,
-    price: 0,
-    image: card.image_small || "https://via.placeholder.com/400x560",
-    condition: "Near Mint" as const,
-    game: "Pokémon",
-    category: "pokemon",
-    seller: card.rarity && card.rarity !== "Unknown" ? card.rarity : card.supertype || "Pokémon",
-    location: card.set_name || card.set_id || "",
-    collectionNumber: card.collection_number,
-  }));
+  const { data: searchResults = [], isLoading } = useCards(search, 60);
+  const isSearching = search.length > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header onCategorySelect={handleCategoryFromNav} />
+      <Header />
       <HeroSection onSearch={handleSearch} />
 
       <main ref={listingsRef} className="container mx-auto flex-1 px-4 py-10">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-display text-2xl font-bold text-foreground">
-              {search ? `Resultados para "${search}"` : "Anúncios"}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {filtered.length} cartas disponíveis
-            </p>
-          </div>
-          <CategoryFilter selected={category} onSelect={setCategory} />
-        </div>
-
-        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((listing, i) => (
-            <div
-              key={listing.id}
-              className="animate-fade-in"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <ListingCard listing={listing} onClick={() => setSelectedListing(listing)} />
+        {isSearching ? (
+          <section>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-2xl font-bold text-foreground">
+                  Resultados para "{search}"
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {searchResults.length} cartas encontradas
+                </p>
+              </div>
+              <button
+                onClick={clearSearch}
+                className="text-sm text-primary hover:underline"
+              >
+                Limpar busca
+              </button>
             </div>
-          ))}
-        </div>
+            <CardGrid cards={searchResults} isLoading={isLoading} />
+            {!isLoading && searchResults.length === 0 && (
+              <div className="py-20 text-center">
+                <p className="text-lg text-muted-foreground">
+                  Nenhuma carta encontrada.
+                </p>
+              </div>
+            )}
+          </section>
+        ) : (
+          <>
+            {/* Section 1: Trending Cards */}
+            <section className="mb-14">
+              <h2 className="mb-1 font-display text-2xl font-bold text-foreground">
+                🔥 Cartas em Alta
+              </h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Cartas com ofertas ativas no marketplace
+              </p>
+              <TrendingCards />
+            </section>
 
-        {filtered.length === 0 && (
-          <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground">
-              Nenhuma carta encontrada.
-            </p>
-            <button
-              onClick={() => { setSearch(""); setCategory("all"); }}
-              className="mt-3 text-sm text-primary hover:underline"
-            >
-              Limpar filtros
-            </button>
-          </div>
+            {/* Section 2: Explore Collections */}
+            <section>
+              <h2 className="mb-1 font-display text-2xl font-bold text-foreground">
+                📦 Explorar por Coleções
+              </h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Navegue pelas expansões de Pokémon TCG
+              </p>
+              <SetsGrid />
+            </section>
+          </>
         )}
       </main>
 
-      <Footer onCategorySelect={handleCategoryFromNav} />
-
-      <ListingDetailDialog
-        listing={selectedListing}
-        open={!!selectedListing}
-        onClose={() => setSelectedListing(null)}
-      />
+      <Footer />
     </div>
   );
 };

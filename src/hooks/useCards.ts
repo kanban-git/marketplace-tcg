@@ -12,55 +12,162 @@ export interface Card {
   image_small: string | null;
   image_large: string | null;
   created_at: string;
-  collection_number: string; // formatted "04/120"
+  collection_number: string;
   set_name: string | null;
 }
 
-export function useCards(category: string, search: string) {
+export interface CardWithMarket extends Card {
+  offers_count: number;
+  min_price_cents: number | null;
+  avg_price_cents: number | null;
+}
+
+function mapCardRow(row: any): Card {
+  const setTotal = row.sets?.total;
+  const num = row.number;
+  const formatted =
+    num && setTotal
+      ? `${num.toString().padStart(2, "0")}/${setTotal}`
+      : num || "—";
+  return {
+    ...row,
+    collection_number: formatted,
+    set_name: row.sets?.name || null,
+    sets: undefined,
+  } as Card;
+}
+
+export function useCards(search: string, limit = 100) {
   return useQuery({
-    queryKey: ["cards", category, search],
+    queryKey: ["cards", search, limit],
     queryFn: async () => {
       const client = supabase as any;
       let query = client
         .from("cards")
         .select("*, sets(name, total)")
         .order("name")
-        .limit(100);
+        .limit(limit);
 
       if (search) {
-        query = query.ilike("name", `%${search}%`);
-      }
-
-      if (category !== "all") {
-        const typeMap: Record<string, string> = {
-          pokemon: "Pokémon",
-          fire: "Fire",
-          water: "Water",
-          grass: "Grass",
-          electric: "Lightning",
-          psychic: "Psychic",
-        };
-        const type = typeMap[category];
-        if (type) {
-          query = query.contains("types", [type]);
+        // Support searching by name or number format like "44/105"
+        if (/^\d+\/\d+$/.test(search)) {
+          const [num] = search.split("/");
+          query = query.eq("number", num);
+        } else {
+          query = query.or(
+            `name.ilike.%${search}%,sets.name.ilike.%${search}%`
+          );
         }
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map((row: any) => {
-        const setTotal = row.sets?.total;
-        const num = row.number;
-        const formatted = num && setTotal
-          ? `${num.toString().padStart(2, "0")}/${setTotal}`
-          : num || "—";
+      return (data || []).map(mapCardRow) as Card[];
+    },
+  });
+}
+
+export function useSets() {
+  return useQuery({
+    queryKey: ["sets"],
+    queryFn: async () => {
+      const client = supabase as any;
+      const { data, error } = await client
+        .from("sets")
+        .select("*")
+        .order("release_date", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useTrendingCards() {
+  return useQuery({
+    queryKey: ["trending-cards"],
+    queryFn: async () => {
+      const client = supabase as any;
+      // Get cards that have active listings via the view
+      const { data: stats, error: statsErr } = await client
+        .from("card_market_stats")
+        .select("*")
+        .order("offers_count", { ascending: false })
+        .limit(12);
+
+      if (statsErr) throw statsErr;
+      if (!stats || stats.length === 0) return [];
+
+      const cardIds = stats.map((s: any) => s.card_id);
+      const { data: cards, error: cardsErr } = await client
+        .from("cards")
+        .select("*, sets(name, total)")
+        .in("id", cardIds);
+
+      if (cardsErr) throw cardsErr;
+
+      return (cards || []).map((row: any) => {
+        const card = mapCardRow(row);
+        const stat = stats.find((s: any) => s.card_id === card.id);
         return {
-          ...row,
-          collection_number: formatted,
-          set_name: row.sets?.name || null,
-          sets: undefined,
-        } as Card;
+          ...card,
+          offers_count: stat?.offers_count || 0,
+          min_price_cents: stat?.min_price_cents || null,
+          avg_price_cents: stat?.avg_price_cents || null,
+        } as CardWithMarket;
       });
+    },
+  });
+}
+
+export function useCardDetail(cardId: string | undefined) {
+  return useQuery({
+    queryKey: ["card-detail", cardId],
+    enabled: !!cardId,
+    queryFn: async () => {
+      const client = supabase as any;
+      const { data, error } = await client
+        .from("cards")
+        .select("*, sets(name, total, logo, symbol)")
+        .eq("id", cardId)
+        .single();
+      if (error) throw error;
+      return mapCardRow(data) as Card & { sets?: any };
+    },
+  });
+}
+
+export function useCardListings(cardId: string | undefined) {
+  return useQuery({
+    queryKey: ["card-listings", cardId],
+    enabled: !!cardId,
+    queryFn: async () => {
+      const client = supabase as any;
+      const { data, error } = await client
+        .from("listings")
+        .select("*, profiles(display_name, reputation_score, city, state)")
+        .eq("card_id", cardId)
+        .eq("status", "active")
+        .order("price_cents", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useCardMarketStats(cardId: string | undefined) {
+  return useQuery({
+    queryKey: ["card-market-stats", cardId],
+    enabled: !!cardId,
+    queryFn: async () => {
+      const client = supabase as any;
+      const { data, error } = await client
+        .from("card_market_stats")
+        .select("*")
+        .eq("card_id", cardId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
   });
 }
