@@ -6,6 +6,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "PokemonTCGApp/1.0",
+        },
+      });
+      if (res.status === 504 || res.status === 502 || res.status === 503) {
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`Retry ${attempt + 1}/${maxRetries} for ${url} after ${delay}ms`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+      }
+      return res;
+    } catch (err) {
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`Retry ${attempt + 1}/${maxRetries} after network error: ${err.message}`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`Failed after ${maxRetries} retries: ${url}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,12 +59,7 @@ Deno.serve(async (req) => {
     const syncId = syncRecord.id;
 
     // Fetch sets from Pokémon TCG API
-    const setsRes = await fetch("https://api.pokemontcg.io/v2/sets?pageSize=20", {
-      headers: { 
-        "Accept": "application/json",
-        "User-Agent": "PokemonTCGApp/1.0",
-      },
-    });
+    const setsRes = await fetchWithRetry("https://api.pokemontcg.io/v2/sets?pageSize=20");
     if (!setsRes.ok) {
       const errBody = await setsRes.text();
       console.error("Sets API response:", setsRes.status, errBody);
@@ -64,7 +90,7 @@ Deno.serve(async (req) => {
       });
 
       // Fetch cards for this set (first page only to keep it fast)
-      const cardsRes = await fetch(
+      const cardsRes = await fetchWithRetry(
         `https://api.pokemontcg.io/v2/cards?q=set.id:${s.id}&pageSize=50&page=1`
       );
       if (!cardsRes.ok) {
