@@ -12,6 +12,8 @@ export interface Card {
   image_small: string | null;
   image_large: string | null;
   created_at: string;
+  collection_number: string; // formatted "04/120"
+  set_name: string | null;
 }
 
 export function useCards(category: string, search: string) {
@@ -21,7 +23,7 @@ export function useCards(category: string, search: string) {
       const client = supabase as any;
       let query = client
         .from("cards")
-        .select("*")
+        .select("*, sets(name, total)")
         .order("name")
         .limit(100);
 
@@ -46,7 +48,19 @@ export function useCards(category: string, search: string) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as Card[];
+      return (data || []).map((row: any) => {
+        const setTotal = row.sets?.total;
+        const num = row.number;
+        const formatted = num && setTotal
+          ? `${num.toString().padStart(2, "0")}/${setTotal}`
+          : num || "—";
+        return {
+          ...row,
+          collection_number: formatted,
+          set_name: row.sets?.name || null,
+          sets: undefined,
+        } as Card;
+      });
     },
   });
 }

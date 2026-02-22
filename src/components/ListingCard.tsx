@@ -57,7 +57,9 @@ const ListingCard = ({ listing, onClick }: Props) => {
           <span className="text-xs text-muted-foreground">{listing.seller}</span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            {listing.location}
+            {listing.collectionNumber
+              ? `${listing.location} · ${listing.collectionNumber}`
+              : listing.location}
           </span>
         </div>
       </div>
