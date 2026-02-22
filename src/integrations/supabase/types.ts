@@ -61,6 +61,102 @@ export type Database = {
           },
         ]
       }
+      listings: {
+        Row: {
+          card_id: string
+          city: string | null
+          condition: string
+          created_at: string
+          id: string
+          language: string
+          price_cents: number
+          quantity: number
+          seller_id: string
+          shipping_type: string
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          card_id: string
+          city?: string | null
+          condition?: string
+          created_at?: string
+          id?: string
+          language?: string
+          price_cents: number
+          quantity?: number
+          seller_id: string
+          shipping_type?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          card_id?: string
+          city?: string | null
+          condition?: string
+          created_at?: string
+          id?: string
+          language?: string
+          price_cents?: number
+          quantity?: number
+          seller_id?: string
+          shipping_type?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          created_at: string
+          display_name: string
+          id: string
+          reputation_score: number | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+          reputation_score?: number | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          reputation_score?: number | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sets: {
         Row: {
           created_at: string
@@ -135,7 +231,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      card_market_stats: {
+        Row: {
+          avg_price_cents: number | null
+          card_id: string | null
+          last_offer_at: string | null
+          min_price_cents: number | null
+          offers_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
