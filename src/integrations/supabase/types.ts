@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cards: {
+        Row: {
+          created_at: string
+          id: string
+          image_large: string | null
+          image_small: string | null
+          name: string
+          number: string | null
+          rarity: string | null
+          set_id: string | null
+          supertype: string | null
+          types: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          image_large?: string | null
+          image_small?: string | null
+          name: string
+          number?: string | null
+          rarity?: string | null
+          set_id?: string | null
+          supertype?: string | null
+          types?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_large?: string | null
+          image_small?: string | null
+          name?: string
+          number?: string | null
+          rarity?: string | null
+          set_id?: string | null
+          supertype?: string | null
+          types?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sets: {
+        Row: {
+          created_at: string
+          id: string
+          logo: string | null
+          name: string
+          release_date: string | null
+          series: string | null
+          symbol: string | null
+          total: number | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          logo?: string | null
+          name: string
+          release_date?: string | null
+          series?: string | null
+          symbol?: string | null
+          total?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          name?: string
+          release_date?: string | null
+          series?: string | null
+          symbol?: string | null
+          total?: number | null
+        }
+        Relationships: []
+      }
+      sync_status: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          synced_cards: number | null
+          synced_sets: number | null
+          total_cards: number | null
+          total_sets: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          synced_cards?: number | null
+          synced_sets?: number | null
+          total_cards?: number | null
+          total_sets?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          synced_cards?: number | null
+          synced_sets?: number | null
+          total_cards?: number | null
+          total_sets?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
