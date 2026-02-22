@@ -22,10 +22,10 @@ const Header = ({ onCategorySelect }: Props) => {
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
         <button onClick={() => onCategorySelect("all")} className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <span className="font-display text-lg font-bold text-primary-foreground">TC</span>
+            <span className="font-display text-lg font-bold text-primary-foreground">TH</span>
           </div>
           <span className="font-display text-xl font-bold text-foreground">
-            Trade<span className="text-primary">Cards</span>
+            TCH<span className="text-primary">Hub</span>
           </span>
         </button>
 
