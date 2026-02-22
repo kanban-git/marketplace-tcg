@@ -9,6 +9,7 @@ export interface Listing {
   seller: string;
   location: string;
   featured?: boolean;
+  collectionNumber?: string;
 }
 
 export const mockListings: Listing[] = [

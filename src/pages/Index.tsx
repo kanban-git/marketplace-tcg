@@ -42,7 +42,8 @@ const Index = () => {
     game: "Pokémon",
     category: "pokemon",
     seller: card.rarity || "Unknown",
-    location: card.set_id || "",
+    location: card.set_name || card.set_id || "",
+    collectionNumber: card.collection_number,
   }));
 
   return (
