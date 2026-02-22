@@ -1,1 +1,4 @@
 project_id = "flskgtwqbbwcrlxfaujk"
+
+[functions.sync-pokemon]
+verify_jwt = false
