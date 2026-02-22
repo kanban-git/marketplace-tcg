@@ -6,6 +6,7 @@ import ListingCard from "@/components/ListingCard";
 import ListingDetailDialog from "@/components/ListingDetailDialog";
 import Footer from "@/components/Footer";
 import { type Listing } from "@/data/mockListings";
+import { useCards, type Card } from "@/hooks/useCards";
 
 const Index = () => {
   const [category, setCategory] = useState("all");
@@ -29,8 +30,20 @@ const Index = () => {
     scrollToListings();
   };
 
-  // TODO: Replace with real Supabase query
-  const filtered: Listing[] = [];
+  const { data: cards = [], isLoading } = useCards(category, search);
+
+  // Convert cards to Listing format for existing components
+  const filtered: Listing[] = cards.map((card) => ({
+    id: card.id,
+    title: card.name,
+    price: 0,
+    image: card.image_small || "https://via.placeholder.com/400x560",
+    condition: "Near Mint" as const,
+    game: "Pokémon",
+    category: "pokemon",
+    seller: card.rarity || "Unknown",
+    location: card.set_id || "",
+  }));
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
