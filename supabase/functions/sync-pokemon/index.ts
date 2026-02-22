@@ -14,103 +14,20 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
       });
       if ([502, 503, 504].includes(res.status) && attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000;
-        console.log(`Retry ${attempt + 1}/${maxRetries} for ${url} after ${delay}ms`);
+        console.log(`Retry ${attempt + 1}/${maxRetries} after ${res.status}`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
       return res;
     } catch (err) {
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000;
-        console.log(`Retry ${attempt + 1}/${maxRetries} after network error: ${err.message}`);
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
         continue;
       }
       throw err;
     }
   }
   throw new Error(`Failed after ${maxRetries} retries: ${url}`);
-}
-
-// Try pokemontcg.io first, fall back to TCGDex
-async function fetchSets(): Promise<any[]> {
-  console.log("Trying pokemontcg.io...");
-  const res = await fetchWithRetry("https://api.pokemontcg.io/v2/sets?pageSize=20");
-  if (res.ok) {
-    const data = await res.json();
-    console.log(`pokemontcg.io returned ${data.data?.length} sets`);
-    return (data.data || []).map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      series: s.series,
-      total: s.total,
-      release_date: s.releaseDate,
-      logo: s.images?.logo,
-      symbol: s.images?.symbol,
-    }));
-  }
-
-  console.log(`pokemontcg.io failed (${res.status}), trying TCGDex fallback...`);
-  await res.text(); // consume body
-  const tcgRes = await fetchWithRetry("https://api.tcgdex.net/v2/en/sets");
-  if (!tcgRes.ok) {
-    const body = await tcgRes.text();
-    throw new Error(`Both APIs failed. TCGDex: ${tcgRes.status} - ${body.substring(0, 200)}`);
-  }
-  const tcgSets = await tcgRes.json();
-  console.log(`TCGDex returned ${tcgSets.length} sets`);
-  // TCGDex returns a flat array, take first 20
-  return tcgSets.slice(0, 20).map((s: any) => ({
-    id: s.id,
-    name: s.name,
-    series: s.serie?.name || null,
-    total: s.cardCount?.total || null,
-    release_date: s.releaseDate || null,
-    logo: s.logo ? `${s.logo}/high.webp` : null,
-    symbol: s.symbol ? `${s.symbol}/high.webp` : null,
-    _source: "tcgdex",
-  }));
-}
-
-async function fetchCardsForSet(setId: string, source?: string): Promise<any[]> {
-  if (source === "tcgdex") {
-    const res = await fetchWithRetry(`https://api.tcgdex.net/v2/en/sets/${setId}`);
-    if (!res.ok) { await res.text(); return []; }
-    const data = await res.json();
-    return (data.cards || []).slice(0, 50).map((c: any) => ({
-      id: `${setId}-${c.localId}`,
-      set_id: setId,
-      name: c.name,
-      number: c.localId,
-      rarity: c.rarity || "Unknown",
-      supertype: c.category || null,
-      types: c.types || [],
-      image_small: c.image ? `${c.image}/low.webp` : null,
-      image_large: c.image ? `${c.image}/high.webp` : null,
-    }));
-  }
-
-  // pokemontcg.io
-  const res = await fetchWithRetry(
-    `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=50&page=1`
-  );
-  if (!res.ok) {
-    console.error(`Cards API error for set ${setId}: ${res.status}`);
-    await res.text();
-    return [];
-  }
-  const data = await res.json();
-  return (data.data || []).map((c: any) => ({
-    id: c.id,
-    set_id: setId,
-    name: c.name,
-    number: c.number,
-    rarity: c.rarity || "Unknown",
-    supertype: c.supertype,
-    types: c.types || [],
-    image_small: c.images?.small,
-    image_large: c.images?.large,
-  }));
 }
 
 Deno.serve(async (req) => {
@@ -123,66 +40,104 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { data: syncRecord, error: syncErr } = await supabase
-      .from("sync_status")
-      .insert({ status: "running", started_at: new Date().toISOString() })
-      .select()
-      .single();
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const batchSize = body.batchSize || 10;
+    const offset = body.offset || 0;
 
-    if (syncErr) throw syncErr;
-    const syncId = syncRecord.id;
+    // Step 1: Fetch ALL set IDs from TCGDex (lightweight list)
+    const setsRes = await fetchWithRetry("https://api.tcgdex.net/v2/en/sets");
+    if (!setsRes.ok) {
+      const err = await setsRes.text();
+      throw new Error(`Sets API error: ${setsRes.status} - ${err.substring(0, 200)}`);
+    }
+    const allSets: any[] = await setsRes.json();
+    const totalSets = allSets.length;
 
-    const sets = await fetchSets();
-    const source = sets[0]?._source;
+    // Sort by release date (newest first for better UX)
+    allSets.sort((a: any, b: any) => (b.releaseDate || "").localeCompare(a.releaseDate || ""));
 
-    await supabase
-      .from("sync_status")
-      .update({ total_sets: sets.length })
-      .eq("id", syncId);
+    // Slice the batch
+    const batch = allSets.slice(offset, offset + batchSize);
+    if (batch.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, message: "All sets already synced", totalSets, offset }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    let totalCards = 0;
+    console.log(`Processing batch: offset=${offset}, batchSize=${batchSize}, total=${totalSets}, batch=${batch.length}`);
+
     let syncedCards = 0;
     let syncedSets = 0;
 
-    for (const s of sets) {
+    for (const s of batch) {
+      // Fetch full set details (includes cards)
+      const setRes = await fetchWithRetry(`https://api.tcgdex.net/v2/en/sets/${s.id}`);
+      if (!setRes.ok) {
+        console.error(`Set ${s.id} fetch failed: ${setRes.status}`);
+        await setRes.text();
+        continue;
+      }
+      const setData = await setRes.json();
+
+      // Upsert set
       await supabase.from("sets").upsert({
         id: s.id,
-        name: s.name,
-        series: s.series,
-        total: s.total,
-        release_date: s.release_date,
-        logo: s.logo,
-        symbol: s.symbol,
+        name: setData.name || s.name,
+        series: setData.serie?.name || null,
+        total: setData.cardCount?.total || null,
+        release_date: setData.releaseDate || null,
+        logo: setData.logo ? `${setData.logo}/high.webp` : null,
+        symbol: setData.symbol ? `${setData.symbol}/high.webp` : null,
       });
 
-      const cards = await fetchCardsForSet(s.id, source);
-      totalCards += cards.length;
-
+      // Upsert cards
+      const cards = setData.cards || [];
       if (cards.length > 0) {
-        await supabase.from("cards").upsert(cards);
+        const rows = cards.map((c: any) => ({
+          id: `${s.id}-${c.localId}`,
+          set_id: s.id,
+          name: c.name,
+          number: c.localId,
+          rarity: c.rarity || "Unknown",
+          supertype: c.category || null,
+          types: c.types || [],
+          image_small: c.image ? `${c.image}/low.webp` : null,
+          image_large: c.image ? `${c.image}/high.webp` : null,
+        }));
+
+        // Upsert in chunks of 100 to avoid payload limits
+        for (let i = 0; i < rows.length; i += 100) {
+          const chunk = rows.slice(i, i + 100);
+          const { error } = await supabase.from("cards").upsert(chunk);
+          if (error) console.error(`Upsert error for set ${s.id}:`, error.message);
+        }
         syncedCards += cards.length;
       }
 
       syncedSets++;
-      await supabase
-        .from("sync_status")
-        .update({ synced_sets: syncedSets, total_cards: totalCards, synced_cards: syncedCards })
-        .eq("id", syncId);
+      console.log(`Set ${syncedSets}/${batch.length}: ${setData.name} (${cards.length} cards)`);
+
+      // Small delay to be gentle on the API
+      await new Promise(r => setTimeout(r, 200));
     }
 
-    await supabase
-      .from("sync_status")
-      .update({
-        status: "completed",
-        finished_at: new Date().toISOString(),
-        synced_sets: syncedSets,
-        total_cards: totalCards,
-        synced_cards: syncedCards,
-      })
-      .eq("id", syncId);
+    const nextOffset = offset + batchSize;
+    const hasMore = nextOffset < totalSets;
 
     return new Response(
-      JSON.stringify({ success: true, sets: syncedSets, cards: syncedCards, source: source || "pokemontcg" }),
+      JSON.stringify({
+        success: true,
+        syncedSets,
+        syncedCards,
+        totalSets,
+        offset,
+        nextOffset: hasMore ? nextOffset : null,
+        hasMore,
+        message: hasMore
+          ? `Synced ${syncedSets} sets (${syncedCards} cards). Call again with offset=${nextOffset} for next batch.`
+          : `All done! Synced ${syncedSets} sets (${syncedCards} cards).`,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
