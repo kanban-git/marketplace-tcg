@@ -42,6 +42,7 @@ const Signup = () => {
   const isSubmittingRef = useRef(false);
 
   // Validation states
+  const [nameStatus, setNameStatus] = useState<ValidationStatus>("idle");
   const [emailStatus, setEmailStatus] = useState<ValidationStatus>("idle");
   const [cpfStatus, setCpfStatus] = useState<ValidationStatus>("idle");
   const [phoneStatus, setPhoneStatus] = useState<ValidationStatus>("idle");
@@ -74,12 +75,13 @@ const Signup = () => {
     value: string,
     column: string,
     minLength: number,
-    setStatus: (s: ValidationStatus) => void
+    setStatus: (s: ValidationStatus) => void,
+    stripNonDigits: boolean = true
   ) => {
     const timerRef = useRef<ReturnType<typeof setTimeout>>();
     useEffect(() => {
-      const clean = value.replace(/\D/g, "");
-      if (clean.length < minLength) {
+      const queryValue = stripNonDigits ? value.replace(/\D/g, "") : value.trim();
+      if (queryValue.length < minLength) {
         setStatus("idle");
         return;
       }
@@ -89,7 +91,7 @@ const Signup = () => {
         const res = await (supabase
           .from("profiles")
           .select("id") as any)
-          .eq(column, clean)
+          .eq(column, queryValue)
           .maybeSingle();
         setStatus(res.data ? "taken" : "available");
       }, 500);
@@ -97,14 +99,16 @@ const Signup = () => {
     }, [value]);
   };
 
-  useProfileFieldValidator(cpf, "cpf", 11, setCpfStatus);
-  useProfileFieldValidator(phone, "phone", 10, setPhoneStatus);
+  useProfileFieldValidator(displayName, "display_name", 2, setNameStatus, false);
+  useProfileFieldValidator(cpf, "cpf", 11, setCpfStatus, true);
+  useProfileFieldValidator(phone, "phone", 10, setPhoneStatus, true);
 
   const passwordsMatch = password.length >= 6 && password === confirmPassword;
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   const canSubmit =
     displayName.length > 0 &&
+    nameStatus === "available" &&
     emailStatus === "available" &&
     cpfStatus === "available" &&
     phoneStatus === "available" &&
@@ -163,13 +167,22 @@ const Signup = () => {
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
-          <Input
-            placeholder="Nome de exibição"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            required
-            maxLength={100}
-          />
+          <div className="relative">
+            <Input
+              placeholder="Nome de exibição"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+              maxLength={100}
+              className={nameStatus === "taken" ? "border-destructive" : ""}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <StatusIcon status={nameStatus} />
+            </div>
+            {nameStatus === "taken" && (
+              <p className="mt-1 text-xs text-destructive">Nome já está em uso.</p>
+            )}
+          </div>
 
           {/* Email */}
           <div className="relative">
