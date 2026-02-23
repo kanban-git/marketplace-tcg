@@ -158,9 +158,11 @@ export type Database = {
         Row: {
           avatar_url: string | null
           city: string | null
+          cpf: string | null
           created_at: string
           display_name: string
           id: string
+          phone: string | null
           reputation_score: number | null
           state: string | null
           status: string
@@ -169,9 +171,11 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           city?: string | null
+          cpf?: string | null
           created_at?: string
           display_name?: string
           id: string
+          phone?: string | null
           reputation_score?: number | null
           state?: string | null
           status?: string
@@ -180,9 +184,11 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           city?: string | null
+          cpf?: string | null
           created_at?: string
           display_name?: string
           id?: string
+          phone?: string | null
           reputation_score?: number | null
           state?: string | null
           status?: string
@@ -334,9 +340,11 @@ export type Database = {
         Returns: {
           avatar_url: string | null
           city: string | null
+          cpf: string | null
           created_at: string
           display_name: string
           id: string
+          phone: string | null
           reputation_score: number | null
           state: string | null
           status: string
