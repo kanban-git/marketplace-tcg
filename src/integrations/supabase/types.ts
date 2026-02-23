@@ -97,6 +97,7 @@ export type Database = {
           city: string | null
           condition: string
           created_at: string
+          finish: string
           id: string
           language: string
           price_cents: number
@@ -112,6 +113,7 @@ export type Database = {
           city?: string | null
           condition?: string
           created_at?: string
+          finish?: string
           id?: string
           language?: string
           price_cents: number
@@ -127,6 +129,7 @@ export type Database = {
           city?: string | null
           condition?: string
           created_at?: string
+          finish?: string
           id?: string
           language?: string
           price_cents?: number
@@ -318,6 +321,7 @@ export type Database = {
           city: string | null
           condition: string
           created_at: string
+          finish: string
           id: string
           language: string
           price_cents: number
