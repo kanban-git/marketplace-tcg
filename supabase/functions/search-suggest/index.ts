@@ -26,85 +26,95 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Detect number/total pattern like "05/20" or "44/105"
-    const numberPattern = /^(\d{1,3})\s*\/\s*(\d{1,3})$/;
+    // Detect patterns
+    const fullPattern = /^\s*(\d{1,3})\s*\/\s*(\d{1,3})\s*$/;      // "1/53"
+    const partialTotalPattern = /^\s*(\d{1,3})\s*\/\s*(\d{1,2})\s*$/; // reuse fullPattern but treat as partial when total is short
+    const slashOnlyPattern = /^\s*(\d{1,3})\s*\/\s*$/;              // "1/"
     const numberOnlyPattern = /^(\d{1,3})$/;
-    const match = q.match(numberPattern);
-    const numberOnlyMatch = !match ? q.match(numberOnlyPattern) : null;
+
+    const fullMatch = q.match(fullPattern);
+    const slashOnlyMatch = !fullMatch ? q.match(slashOnlyPattern) : null;
+    const numberOnlyMatch = !fullMatch && !slashOnlyMatch ? q.match(numberOnlyPattern) : null;
 
     let cards: any[] = [];
     let sets: any[] = [];
 
-    if (match) {
-      // Search by number/total
-      const [, num, total] = match;
-      const { data } = await supabase
+    // Helper: normalize number for comparison (try both raw and zero-padded)
+    const normalizeNumbers = (num: string) => {
+      const raw = num.replace(/^0+/, '') || '0';
+      const padded = num.padStart(3, '0');
+      return [raw, padded, num].filter((v, i, a) => a.indexOf(v) === i);
+    };
+
+    // Helper: map card data with stats
+    const mapCards = (data: any[], statsMap: Map<string, any>) =>
+      data.map((c: any) => {
+        const s = statsMap.get(c.id);
+        const setData = Array.isArray(c.sets) ? c.sets[0] : c.sets;
+        return {
+          id: c.id,
+          name: c.name,
+          number: c.number,
+          setName: setData?.name || "",
+          setTotal: setData?.total || 0,
+          releaseYear: setData?.release_date ? parseInt(setData.release_date.substring(0, 4)) : null,
+          image: c.image_small,
+          minPriceCents: s?.min_price_cents || null,
+          offersCount: s?.offers_count || 0,
+        };
+      });
+
+    const fetchStats = async (cardIds: string[]) => {
+      if (cardIds.length === 0) return new Map();
+      const { data: stats } = await supabase
+        .from("card_market_stats")
+        .select("card_id, min_price_cents, offers_count")
+        .in("card_id", cardIds);
+      return new Map((stats || []).map((s: any) => [s.card_id, s]));
+    };
+
+    // Sort by offers desc, then release date desc
+    const sortByPopularity = (items: any[]) =>
+      items.sort((a, b) => (b.offersCount - a.offersCount) || 0);
+
+    if (fullMatch || slashOnlyMatch) {
+      const num = (fullMatch || slashOnlyMatch)![1];
+      const total = fullMatch ? fullMatch[2] : null;
+      const numVariants = normalizeNumbers(num);
+
+      // Fetch cards matching any number variant, with set join
+      let query = supabase
         .from("cards")
         .select("id, name, number, image_small, set_id, sets!inner(name, total, release_date)")
-        .eq("number", num)
-        .eq("sets.total", parseInt(total))
+        .in("number", numVariants);
+
+      if (total) {
+        // Full pattern "1/53" - exact total match
+        query = query.eq("sets.total", parseInt(total));
+      }
+      // For partial "1/" - no total filter, get from all sets
+
+      const { data } = await query
         .order("sets(release_date)", { ascending: false })
-        .limit(8);
+        .limit(6);
 
-      if (data) {
-        // Get market stats for these cards
-        const cardIds = data.map((c: any) => c.id);
-        const { data: stats } = await supabase
-          .from("card_market_stats")
-          .select("card_id, min_price_cents, offers_count")
-          .in("card_id", cardIds);
-
-        const statsMap = new Map((stats || []).map((s: any) => [s.card_id, s]));
-
-        cards = data.map((c: any) => {
-          const s = statsMap.get(c.id);
-          const setData = Array.isArray(c.sets) ? c.sets[0] : c.sets;
-          return {
-            id: c.id,
-            name: c.name,
-            number: c.number,
-            setName: setData?.name || "",
-            setTotal: setData?.total || 0,
-            releaseYear: setData?.release_date ? parseInt(setData.release_date.substring(0, 4)) : null,
-            image: c.image_small,
-            minPriceCents: s?.min_price_cents || null,
-            offersCount: s?.offers_count || 0,
-          };
-        });
+      if (data && data.length > 0) {
+        const statsMap = await fetchStats(data.map((c: any) => c.id));
+        cards = sortByPopularity(mapCards(data, statsMap));
       }
     } else if (numberOnlyMatch) {
-      // Search by number only
       const num = numberOnlyMatch[1];
+      const numVariants = normalizeNumbers(num);
       const { data } = await supabase
         .from("cards")
         .select("id, name, number, image_small, set_id, sets(name, total, release_date)")
-        .eq("number", num)
+        .in("number", numVariants)
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(6);
 
-      if (data) {
-        const cardIds = data.map((c: any) => c.id);
-        const { data: stats } = cardIds.length > 0
-          ? await supabase.from("card_market_stats").select("card_id, min_price_cents, offers_count").in("card_id", cardIds)
-          : { data: [] };
-
-        const statsMap = new Map((stats || []).map((s: any) => [s.card_id, s]));
-
-        cards = data.map((c: any) => {
-          const s = statsMap.get(c.id);
-          const setData = Array.isArray(c.sets) ? c.sets[0] : c.sets;
-          return {
-            id: c.id,
-            name: c.name,
-            number: c.number,
-            setName: setData?.name || "",
-            setTotal: setData?.total || 0,
-            releaseYear: setData?.release_date ? parseInt(setData.release_date.substring(0, 4)) : null,
-            image: c.image_small,
-            minPriceCents: s?.min_price_cents || null,
-            offersCount: s?.offers_count || 0,
-          };
-        });
+      if (data && data.length > 0) {
+        const statsMap = await fetchStats(data.map((c: any) => c.id));
+        cards = sortByPopularity(mapCards(data, statsMap));
       }
     } else {
       // Text search - search cards and sets in parallel
