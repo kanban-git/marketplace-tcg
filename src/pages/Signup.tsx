@@ -167,7 +167,10 @@ const Signup = () => {
               <StatusIcon status={emailStatus} />
             </div>
             {emailStatus === "taken" && (
-              <p className="mt-1 text-xs text-destructive">Email já está em uso.</p>
+              <p className="mt-1 text-xs text-destructive">
+                Email já está em uso.{" "}
+                <Link to="/login" className="text-primary underline">Faça login</Link>.
+              </p>
             )}
           </div>
 
@@ -185,7 +188,10 @@ const Signup = () => {
               <StatusIcon status={cpfStatus} />
             </div>
             {cpfStatus === "taken" && (
-              <p className="mt-1 text-xs text-destructive">CPF já cadastrado.</p>
+              <p className="mt-1 text-xs text-destructive">
+                CPF já cadastrado.{" "}
+                <Link to="/login" className="text-primary underline">Faça login</Link>.
+              </p>
             )}
           </div>
 
@@ -203,7 +209,10 @@ const Signup = () => {
               <StatusIcon status={phoneStatus} />
             </div>
             {phoneStatus === "taken" && (
-              <p className="mt-1 text-xs text-destructive">Telefone já cadastrado.</p>
+              <p className="mt-1 text-xs text-destructive">
+                Telefone já cadastrado.{" "}
+                <Link to="/login" className="text-primary underline">Faça login</Link>.
+              </p>
             )}
           </div>
 
