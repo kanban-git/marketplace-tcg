@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Search, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -39,8 +40,33 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const navigate = useNavigate();
+
+  // Update dropdown position relative to form
+  const updatePosition = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, updatePosition]);
 
   const totalItems = suggestions
     ? Math.min(suggestions.cards.length, 6) + suggestions.sets.length
@@ -86,7 +112,11 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
   // Close on click outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -167,9 +197,19 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
         </button>
       </form>
 
-      {/* Dropdown */}
-      {isOpen && suggestions && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[420px] overflow-y-auto rounded-xl border border-border bg-popover shadow-lg">
+      {/* Dropdown via Portal */}
+      {isOpen && suggestions && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 9999,
+          }}
+          className="max-h-[320px] overflow-y-auto rounded-xl border border-border bg-popover shadow-lg"
+        >
           {suggestions.cards.length === 0 && suggestions.sets.length === 0 && (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
               Nenhum resultado encontrado
@@ -247,7 +287,7 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
                 Coleções
               </div>
               {suggestions.sets.map((set, i) => {
-                const idx = suggestions.cards.length + i;
+                const idx = Math.min(suggestions.cards.length, 6) + i;
                 return (
                   <button
                     key={set.id}
@@ -282,7 +322,8 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
               })}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
