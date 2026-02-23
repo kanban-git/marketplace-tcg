@@ -72,13 +72,28 @@ export function useSets() {
     queryKey: ["sets"],
     queryFn: async () => {
       const client = supabase as any;
-      const { data, error } = await client
-        .from("sets")
-        .select("*")
-        .order("release_date", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data || [];
+      // Fetch all sets in batches to avoid row limits
+      const allSets: any[] = [];
+      let offset = 0;
+      const batchSize = 100;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await client
+          .from("sets")
+          .select("*")
+          .order("release_date", { ascending: false })
+          .range(offset, offset + batchSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allSets.push(...data);
+          offset += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allSets;
     },
   });
 }
