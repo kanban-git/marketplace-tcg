@@ -1,21 +1,12 @@
-import { Search } from "lucide-react";
-import { useState } from "react";
 import heroBg from "@/assets/hero-bg.jpg";
+import SearchAutocomplete from "@/components/SearchAutocomplete";
 
 interface Props {
   onSearch: (query: string) => void;
 }
 
 const HeroSection = ({ onSearch }: Props) => {
-  const [query, setQuery] = useState("");
-
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (query.trim()) onSearch(query.trim());
-  };
-
   const handleTagClick = (tag: string) => {
-    setQuery(tag);
     onSearch(tag);
   };
 
@@ -35,25 +26,7 @@ const HeroSection = ({ onSearch }: Props) => {
           Seu hub de cartas colecionáveis. Pokémon, Magic, Yu-Gi-Oh! e muito mais.
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto mt-8 flex max-w-lg animate-fade-in items-center gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-card [animation-delay:200ms]"
-        >
-          <Search className="ml-4 h-5 w-5 shrink-0 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Buscar cartas, coleções, vendedores..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent px-3 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="m-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Buscar
-          </button>
-        </form>
+        <SearchAutocomplete onSearch={onSearch} />
 
         <div className="mt-6 flex animate-fade-in flex-wrap items-center justify-center gap-2 [animation-delay:300ms]">
           <span className="text-xs text-muted-foreground">Popular:</span>
