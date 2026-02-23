@@ -81,7 +81,7 @@ const SetDetail = () => {
           </div>
         </div>
 
-        <CardGrid cards={cards} isLoading={isLoading} />
+        <CardGrid cards={cards} isLoading={isLoading} compact />
       </main>
       <Footer />
     </div>
