@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           created_at: string
@@ -133,6 +163,7 @@ export type Database = {
           id: string
           reputation_score: number | null
           state: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -143,6 +174,7 @@ export type Database = {
           id: string
           reputation_score?: number | null
           state?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -153,6 +185,7 @@ export type Database = {
           id?: string
           reputation_score?: number | null
           state?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -229,6 +262,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       card_market_stats: {
@@ -251,10 +305,60 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      admin_list_listings: {
+        Args: never
+        Returns: {
+          card_id: string
+          city: string | null
+          condition: string
+          created_at: string
+          id: string
+          language: string
+          price_cents: number
+          quantity: number
+          seller_id: string
+          shipping_type: string
+          state: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "listings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_list_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string | null
+          city: string | null
+          created_at: string
+          display_name: string
+          id: string
+          reputation_score: number | null
+          state: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -381,6 +485,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
