@@ -4,8 +4,51 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CardGrid from "@/components/CardGrid";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Layers } from "lucide-react";
 import { type Card } from "@/hooks/useCards";
+import { useState } from "react";
+
+function ensureHttps(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/^http:\/\//i, "https://");
+}
+
+const SetLogo = ({ set }: { set: any }) => {
+  const [stage, setStage] = useState<"logo" | "symbol" | "icon">("logo");
+
+  const logoUrl = ensureHttps(set.logo);
+  const symbolUrl = ensureHttps(set.symbol);
+
+  if (stage === "icon" || (!logoUrl && !symbolUrl)) {
+    return (
+      <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10">
+        <Layers className="h-7 w-7 text-primary" />
+      </div>
+    );
+  }
+
+  if (stage === "symbol") {
+    if (!symbolUrl) {
+      return (
+        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10">
+          <Layers className="h-7 w-7 text-primary" />
+        </div>
+      );
+    }
+    return (
+      <img src={symbolUrl} alt={set.name} className="h-14 w-auto" onError={() => setStage("icon")} />
+    );
+  }
+
+  return (
+    <img
+      src={logoUrl!}
+      alt={set.name}
+      className="h-14 w-auto"
+      onError={() => setStage(symbolUrl ? "symbol" : "icon")}
+    />
+  );
+};
 
 const SetDetail = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -68,9 +111,7 @@ const SetDetail = () => {
         </button>
 
         <div className="mb-8 flex items-center gap-4">
-          {set?.logo && (
-            <img src={set.logo} alt={set?.name} className="h-14 w-auto" />
-          )}
+          {set && <SetLogo set={set} />}
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">
               {set?.name || "Coleção"}
