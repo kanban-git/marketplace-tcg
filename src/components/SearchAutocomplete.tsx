@@ -43,7 +43,7 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
   const navigate = useNavigate();
 
   const totalItems = suggestions
-    ? suggestions.cards.length + suggestions.sets.length
+    ? Math.min(suggestions.cards.length, 6) + suggestions.sets.length
     : 0;
 
   const fetchSuggestions = useCallback(async (q: string) => {
@@ -104,7 +104,7 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (activeIndex >= 0 && suggestions) {
-      const cardLen = suggestions.cards.length;
+      const cardLen = Math.min(suggestions.cards.length, 6);
       if (activeIndex < cardLen) {
         handleSelect("card", suggestions.cards[activeIndex].id);
       } else {
@@ -182,7 +182,7 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
               <div className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
                 Cartas
               </div>
-              {suggestions.cards.map((card, i) => (
+              {suggestions.cards.slice(0, 6).map((card, i) => (
                 <button
                   key={card.id}
                   onClick={() => handleSelect("card", card.id)}
@@ -228,6 +228,16 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
                 </button>
               ))}
             </div>
+          )}
+
+          {/* "Ver mais" link */}
+          {suggestions.cards.length > 6 && (
+            <button
+              onClick={() => { setIsOpen(false); onSearch(query.trim()); }}
+              className="w-full border-t border-border px-3 py-2.5 text-center text-xs font-medium text-primary hover:bg-secondary transition-colors"
+            >
+              Ver mais resultados...
+            </button>
           )}
 
           {/* Sets */}
