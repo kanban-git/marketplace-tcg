@@ -30,9 +30,11 @@ interface SuggestResponse {
 
 interface Props {
   onSearch: (query: string) => void;
+  variant?: "hero" | "header";
 }
 
-const SearchAutocomplete = ({ onSearch }: Props) => {
+const SearchAutocomplete = ({ onSearch, variant = "hero" }: Props) => {
+  const isHeader = variant === "header";
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SuggestResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -170,31 +172,48 @@ const SearchAutocomplete = ({ onSearch }: Props) => {
     url?.replace("http://", "https://") || null;
 
   return (
-    <div ref={containerRef} className="relative mx-auto mt-8 max-w-lg animate-fade-in [animation-delay:200ms]">
+    <div
+      ref={containerRef}
+      className={
+        isHeader
+          ? "relative w-full max-w-[480px]"
+          : "relative mx-auto mt-8 max-w-lg animate-fade-in [animation-delay:200ms]"
+      }
+    >
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-card"
+        className={
+          isHeader
+            ? "flex items-center gap-0 overflow-hidden rounded-lg border border-border bg-card"
+            : "flex items-center gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-card"
+        }
       >
-        <Search className="ml-4 h-5 w-5 shrink-0 text-muted-foreground" />
+        <Search className={isHeader ? "ml-3 h-4 w-4 shrink-0 text-muted-foreground" : "ml-4 h-5 w-5 shrink-0 text-muted-foreground"} />
         <input
           ref={inputRef}
           type="text"
-          placeholder="Buscar cartas, coleções, vendedores..."
+          placeholder="Buscar cartas, coleções..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
             if (suggestions && query.length >= 2) setIsOpen(true);
           }}
-          className="flex-1 bg-transparent px-3 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          className={
+            isHeader
+              ? "flex-1 bg-transparent px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              : "flex-1 bg-transparent px-3 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          }
         />
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />}
-        <button
-          type="submit"
-          className="m-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          Buscar
-        </button>
+        {!isHeader && (
+          <button
+            type="submit"
+            className="m-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Buscar
+          </button>
+        )}
       </form>
 
       {/* Dropdown via Portal */}
