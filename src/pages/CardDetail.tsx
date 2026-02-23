@@ -253,24 +253,58 @@ const CardDetail = () => {
               </div>
 
               {/* Filters */}
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-4 space-y-3">
                 {[
                   { label: "Idioma", options: LANGUAGE_OPTIONS, value: filterLang, set: setFilterLang },
                   { label: "Acabamento", options: FINISH_OPTIONS, value: filterFinish, set: setFilterFinish },
                   { label: "Condição", options: CONDITION_OPTIONS, value: filterCondition, set: setFilterCondition },
-                ].map(({ label, options, value, set }) => (
-                  <select
-                    key={label}
-                    value={value}
-                    onChange={(e) => set(e.target.value)}
-                    className="rounded-lg border border-border bg-secondary/50 px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">{label}: Todos</option>
-                    {options.slice(1).map((o) => (
-                      <option key={o.value} value={o.value}>{label}: {o.label}</option>
-                    ))}
-                  </select>
-                ))}
+                ].map(({ label, options, value, set }) => {
+                  // Count listings per option
+                  const counts: Record<string, number> = {};
+                  for (const l of listings as any[]) {
+                    let key = "";
+                    if (label === "Idioma") key = languageLabel[l.language] || l.language || "PT";
+                    else if (label === "Acabamento") key = l.finish || "normal";
+                    else key = l.condition;
+                    counts[key] = (counts[key] || 0) + 1;
+                  }
+
+                  return (
+                    <div key={label}>
+                      <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {label}
+                      </span>
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                        {options.map((o) => {
+                          const isActive = value === o.value;
+                          // Resolve count key
+                          let countKey = o.value;
+                          if (label === "Idioma" && o.value) countKey = o.label;
+                          const count = o.value ? counts[countKey] || 0 : (listings as any[]).length;
+
+                          return (
+                            <button
+                              key={o.value}
+                              onClick={() => set(isActive ? "" : o.value)}
+                              className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                                isActive
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                              }`}
+                            >
+                              {o.label}
+                              {count > 0 && (
+                                <span className={`text-[10px] ${isActive ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>
+                                  ({count})
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {loadingListings ? (
