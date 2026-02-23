@@ -17,6 +17,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
 type SortMode = "price" | "reputation" | "recent";
@@ -36,10 +37,51 @@ const conditionLabel: Record<string, string> = {
   Damaged: "Damaged",
 };
 
+const languageLabel: Record<string, string> = {
+  pt: "PT",
+  en: "EN",
+  jp: "JP",
+  "Português": "PT",
+  "Inglês": "EN",
+  "Japonês": "JP",
+};
+
+const finishLabel: Record<string, string> = {
+  normal: "Normal",
+  foil: "Foil",
+  reverse_foil: "Reverse Foil",
+};
+
+const LANGUAGE_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "pt", label: "PT" },
+  { value: "en", label: "EN" },
+  { value: "jp", label: "JP" },
+];
+
+const FINISH_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "normal", label: "Normal" },
+  { value: "foil", label: "Foil" },
+  { value: "reverse_foil", label: "Reverse Foil" },
+];
+
+const CONDITION_OPTIONS = [
+  { value: "", label: "Todas" },
+  { value: "NM", label: "NM" },
+  { value: "LP", label: "LP" },
+  { value: "MP", label: "MP" },
+  { value: "HP", label: "HP" },
+  { value: "Damaged", label: "Damaged" },
+];
+
 const CardDetail = () => {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
   const [sort, setSort] = useState<SortMode>("price");
+  const [filterLang, setFilterLang] = useState("");
+  const [filterFinish, setFilterFinish] = useState("");
+  const [filterCondition, setFilterCondition] = useState("");
 
   const { data: card, isLoading: loadingCard } = useCardDetail(cardId);
   const { data: listings = [], isLoading: loadingListings } =
@@ -47,7 +89,14 @@ const CardDetail = () => {
   const { data: stats } = useCardMarketStats(cardId);
   const cart = useCart();
 
-  const sortedListings = [...listings].sort((a: any, b: any) => {
+  const filteredListings = listings.filter((l: any) => {
+    if (filterLang && (languageLabel[l.language] || l.language) !== languageLabel[filterLang] && l.language !== filterLang) return false;
+    if (filterFinish && (l.finish || "normal") !== filterFinish) return false;
+    if (filterCondition && l.condition !== filterCondition) return false;
+    return true;
+  });
+
+  const sortedListings = [...filteredListings].sort((a: any, b: any) => {
     if (sort === "price") return a.price_cents - b.price_cents;
     if (sort === "reputation")
       return (
@@ -203,6 +252,27 @@ const CardDetail = () => {
                 </div>
               </div>
 
+              {/* Filters */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  { label: "Idioma", options: LANGUAGE_OPTIONS, value: filterLang, set: setFilterLang },
+                  { label: "Acabamento", options: FINISH_OPTIONS, value: filterFinish, set: setFilterFinish },
+                  { label: "Condição", options: CONDITION_OPTIONS, value: filterCondition, set: setFilterCondition },
+                ].map(({ label, options, value, set }) => (
+                  <select
+                    key={label}
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    className="rounded-lg border border-border bg-secondary/50 px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">{label}: Todos</option>
+                    {options.slice(1).map((o) => (
+                      <option key={o.value} value={o.value}>{label}: {o.label}</option>
+                    ))}
+                  </select>
+                ))}
+              </div>
+
               {loadingListings ? (
                 <div className="mt-4 space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -230,11 +300,8 @@ const CardDetail = () => {
                         <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                           Vendedor
                         </th>
-                        <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground sm:table-cell">
-                          Condição
-                        </th>
-                        <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground md:table-cell">
-                          Idioma
+                        <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                          Detalhes
                         </th>
                         <th className="hidden px-4 py-3 text-center font-medium text-muted-foreground sm:table-cell">
                           Qtd
@@ -267,12 +334,18 @@ const CardDetail = () => {
                               )}
                             </div>
                           </td>
-                          <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
-                            {conditionLabel[listing.condition] ||
-                              listing.condition}
-                          </td>
-                          <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                            {listing.language}
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {languageLabel[listing.language] || listing.language || "PT"}
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {finishLabel[listing.finish] || listing.finish || "Normal"}
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {listing.condition}
+                              </Badge>
+                            </div>
                           </td>
                           <td className="hidden px-4 py-3 text-center text-muted-foreground sm:table-cell">
                             {listing.quantity}
