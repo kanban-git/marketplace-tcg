@@ -47,40 +47,58 @@ const Signup = () => {
   const [phoneStatus, setPhoneStatus] = useState<ValidationStatus>("idle");
 
   // Debounced checker
-  const useFieldValidator = (
+  // Debounced email validator (checks auth.users via DB function)
+  const emailTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!email.includes("@")) {
+      setEmailStatus("idle");
+      return;
+    }
+    setEmailStatus("checking");
+    clearTimeout(emailTimerRef.current);
+    emailTimerRef.current = setTimeout(async () => {
+      const { data, error } = await supabase.rpc("check_email_exists", {
+        _email: email.trim(),
+      });
+      if (error) {
+        setEmailStatus("idle");
+        return;
+      }
+      setEmailStatus(data ? "taken" : "available");
+    }, 500);
+    return () => clearTimeout(emailTimerRef.current);
+  }, [email]);
+
+  // Debounced profile field validator (cpf, phone)
+  const useProfileFieldValidator = (
     value: string,
     column: string,
     minLength: number,
     setStatus: (s: ValidationStatus) => void
   ) => {
     const timerRef = useRef<ReturnType<typeof setTimeout>>();
-
     useEffect(() => {
       const clean = value.replace(/\D/g, "");
-      if (column === "email" ? !value.includes("@") : clean.length < minLength) {
+      if (clean.length < minLength) {
         setStatus("idle");
         return;
       }
-
       setStatus("checking");
       clearTimeout(timerRef.current);
       timerRef.current = setTimeout(async () => {
-        const queryValue = column === "email" ? value.trim().toLowerCase() : clean;
         const res = await (supabase
           .from("profiles")
           .select("id") as any)
-          .eq(column, queryValue)
+          .eq(column, clean)
           .maybeSingle();
         setStatus(res.data ? "taken" : "available");
       }, 500);
-
       return () => clearTimeout(timerRef.current);
     }, [value]);
   };
 
-  useFieldValidator(email, "email", 0, setEmailStatus);
-  useFieldValidator(cpf, "cpf", 11, setCpfStatus);
-  useFieldValidator(phone, "phone", 10, setPhoneStatus);
+  useProfileFieldValidator(cpf, "cpf", 11, setCpfStatus);
+  useProfileFieldValidator(phone, "phone", 10, setPhoneStatus);
 
   const passwordsMatch = password.length >= 6 && password === confirmPassword;
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
