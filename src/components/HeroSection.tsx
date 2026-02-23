@@ -27,19 +27,6 @@ const HeroSection = ({ onSearch }: Props) => {
         </p>
 
         <SearchAutocomplete onSearch={onSearch} />
-
-        <div className="mt-6 flex animate-fade-in flex-wrap items-center justify-center gap-2 [animation-delay:300ms]">
-          <span className="text-xs text-muted-foreground">Popular:</span>
-          {["Charizard", "Black Lotus", "Pikachu VMAX", "Exodia"].map((tag) => (
-            <button
-              key={tag}
-              onClick={() => handleTagClick(tag)}
-              className="cursor-pointer rounded-full border border-border bg-secondary px-3 py-1 text-xs text-secondary-foreground transition-colors hover:border-primary/50 hover:text-primary"
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
       </div>
     </section>
   );
