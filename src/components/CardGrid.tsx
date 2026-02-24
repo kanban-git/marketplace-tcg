@@ -43,7 +43,7 @@ const CardGrid = ({ cards, isLoading, compact }: Props) => {
         >
           <div className="aspect-[3/4] overflow-hidden bg-secondary">
             <img
-              src={card.image_small || "https://via.placeholder.com/400x560"}
+              src={(card as any).image_ptbr || card.image_small || "https://via.placeholder.com/400x560"}
               alt={card.name}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"

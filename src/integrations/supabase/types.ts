@@ -49,6 +49,7 @@ export type Database = {
           created_at: string
           id: string
           image_large: string | null
+          image_ptbr: string | null
           image_small: string | null
           name: string
           number: string | null
@@ -61,6 +62,7 @@ export type Database = {
           created_at?: string
           id: string
           image_large?: string | null
+          image_ptbr?: string | null
           image_small?: string | null
           name: string
           number?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_large?: string | null
+          image_ptbr?: string | null
           image_small?: string | null
           name?: string
           number?: string | null

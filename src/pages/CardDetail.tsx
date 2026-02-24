@@ -112,7 +112,7 @@ const CardDetail = () => {
     const item: CartItem = {
       listingId: listing.id,
       cardName: card?.name || "",
-      cardImage: card?.image_small || "",
+      cardImage: card?.image_ptbr || card?.image_small || "",
       priceCents: listing.price_cents,
       quantity: 1,
       maxQuantity: listing.quantity,
@@ -166,7 +166,7 @@ const CardDetail = () => {
         <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
           <div className="mx-auto w-full max-w-xs lg:max-w-none">
             <img
-              src={card.image_large || card.image_small || ""}
+              src={(card as any).image_ptbr || card.image_large || card.image_small || ""}
               alt={card.name}
               className="w-full rounded-xl border border-border shadow-card"
             />
