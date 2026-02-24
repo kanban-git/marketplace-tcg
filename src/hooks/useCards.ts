@@ -11,6 +11,7 @@ export interface Card {
   types: string[] | null;
   image_small: string | null;
   image_large: string | null;
+  image_ptbr: string | null;
   created_at: string;
   collection_number: string;
   set_name: string | null;
