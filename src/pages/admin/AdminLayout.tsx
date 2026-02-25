@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingBag, ScrollText, ArrowLeft, Image } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, ScrollText, ArrowLeft, Image, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   { to: "/admin/users", icon: Users, label: "Usuários" },
   { to: "/admin/listings", icon: ShoppingBag, label: "Anúncios" },
   { to: "/admin/logs", icon: ScrollText, label: "Audit Log" },
+  { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
 ];
 
 const AdminLayout = () => {

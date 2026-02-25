@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 type SortMode = "price" | "reputation" | "recent";
 
@@ -89,6 +90,10 @@ const CardDetail = () => {
   const { data: stats } = useCardMarketStats(cardId);
   const cart = useCart();
 
+  useEffect(() => {
+    if (cardId) trackEvent("view_card_market", { entity_type: "card", entity_id: cardId });
+  }, [cardId]);
+
   const filteredListings = listings.filter((l: any) => {
     if (filterLang && (languageLabel[l.language] || l.language) !== languageLabel[filterLang] && l.language !== filterLang) return false;
     if (filterFinish && (l.finish || "normal") !== filterFinish) return false;
@@ -109,6 +114,7 @@ const CardDetail = () => {
   });
 
   const handleBuy = (listing: any) => {
+    trackEvent("click_buy_now", { entity_type: "card", entity_id: cardId });
     const item: CartItem = {
       listingId: listing.id,
       cardName: card?.name || "",
