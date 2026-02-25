@@ -28,6 +28,7 @@ import Products from "./pages/Products";
 import Accessories from "./pages/Accessories";
 import CreateListing from "./pages/CreateListing";
 import SellerDashboard from "./pages/SellerDashboard";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/sets/:setId" element={<SetDetail />} />
             <Route path="/anunciar" element={<CreateListing />} />
             <Route path="/perfil" element={<SellerDashboard />} />
+            <Route path="/notificacoes" element={<Notifications />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

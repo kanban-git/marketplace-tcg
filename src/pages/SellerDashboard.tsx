@@ -20,9 +20,13 @@ function formatPrice(cents: number) {
 
 const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   active: { label: "Ativo", variant: "default" },
+  pending_review: { label: "Em análise", variant: "secondary" },
+  pending_minimum: { label: "Pendente (mínimo)", variant: "outline" },
+  rejected: { label: "Reprovado", variant: "destructive" },
   pending_activation: { label: "Pendente", variant: "secondary" },
   paused: { label: "Pausado", variant: "outline" },
   sold: { label: "Vendido", variant: "destructive" },
+  cancelled: { label: "Cancelado", variant: "outline" },
 };
 
 const MIN_ACTIVATION_CENTS = 700;
@@ -49,7 +53,7 @@ const SellerDashboard = () => {
   });
 
   const activeListings = (listings || []).filter((l: any) => l.status === "active");
-  const pendingListings = (listings || []).filter((l: any) => l.status === "pending_activation");
+  const pendingListings = (listings || []).filter((l: any) => ["pending_review", "pending_minimum", "pending_activation"].includes(l.status));
   const soldListings = (listings || []).filter((l: any) => l.status === "sold");
 
   const totalActiveValue = activeListings.reduce((s: number, l: any) => s + l.price_cents, 0);

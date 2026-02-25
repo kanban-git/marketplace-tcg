@@ -1,10 +1,11 @@
-import { Plus, User, Menu, LogOut, Shield, ShoppingBag, UserCircle, LogIn, Store, Layers, Package, Puzzle, Users } from "lucide-react";
+import { Plus, User, Menu, LogOut, Shield, ShoppingBag, UserCircle, LogIn, Store, Layers, Package, Puzzle, Users, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ const Header = () => {
   const { pathname } = useLocation();
   const isHome = pathname === "/";
   const { user, profile, isAdmin, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = async () => {
     await signOut();
@@ -83,6 +85,20 @@ const Header = () => {
               >
                 <Plus className="h-4 w-4" />
                 Anunciar
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-muted-foreground hover:text-foreground"
+                onClick={() => navigate("/notificacoes")}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Button>
 
               <DropdownMenu>

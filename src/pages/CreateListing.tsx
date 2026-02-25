@@ -152,13 +152,16 @@ const CreateListing = () => {
   });
 
   const totalAfter = (currentActiveValue || 0) + priceCents;
-  const willBeActive = totalAfter >= MIN_ACTIVATION_CENTS;
+  const meetsMinimum = totalAfter >= MIN_ACTIVATION_CENTS;
+
+  // Determine initial status: always pending_review (admin must approve)
+  // but if total < 7, it goes to pending_minimum first
+  const initialStatus = meetsMinimum ? "pending_review" : "pending_minimum";
 
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!user || !selectedCard) throw new Error("Missing data");
-      const status = willBeActive ? "active" : "pending_activation";
-      const { error } = await supabase.from("listings").insert({
+      const { data: inserted, error } = await supabase.from("listings").insert({
         card_id: selectedCard.id,
         entity_type: "card",
         entity_id: selectedCard.id,
@@ -171,27 +174,42 @@ const CreateListing = () => {
         language,
         finish,
         notes: notes || null,
-        status,
+        status: initialStatus,
         is_test: isTest,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
 
-      // If this new listing pushes total >= 7 BRL, activate all pending
-      if (willBeActive) {
-        await supabase
-          .from("listings")
-          .update({ status: "active" })
-          .eq("seller_id", user.id)
-          .eq("status", "pending_activation");
+      // Create notification
+      const { createNotification } = await import("@/hooks/useNotifications");
+      if (initialStatus === "pending_review") {
+        await createNotification({
+          user_id: user.id,
+          title: "Anúncio enviado para análise",
+          message: `Seu anúncio de "${selectedCard.name}" será revisado por um administrador.`,
+          type: "listing_submitted",
+          entity_type: "listing",
+          entity_id: inserted?.id,
+        });
+      } else {
+        const falta = formatPrice(MIN_ACTIVATION_CENTS - totalAfter);
+        await createNotification({
+          user_id: user.id,
+          title: "Anúncio pendente: mínimo não atingido",
+          message: `Faltam ${falta} em anúncios para ativar. Seu anúncio de "${selectedCard.name}" ficará pendente.`,
+          type: "listing_pending_minimum",
+          entity_type: "listing",
+          entity_id: inserted?.id,
+        });
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["marketplace"] });
       queryClient.invalidateQueries({ queryKey: ["seller"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Anúncio criado!", {
-        description: willBeActive
-          ? "Seu anúncio já está visível no marketplace."
-          : `Anúncio pendente. Você precisa de ${formatPrice(MIN_ACTIVATION_CENTS - totalAfter)} mais em anúncios para ativar.`,
+        description: initialStatus === "pending_review"
+          ? "Seu anúncio será revisado por um administrador antes de ser publicado."
+          : `Pendente: faltam ${formatPrice(MIN_ACTIVATION_CENTS - totalAfter)} para atingir o mínimo de R$ 7,00.`,
       });
       navigate("/perfil");
     },
@@ -427,12 +445,20 @@ const CreateListing = () => {
               )}
 
               {/* Activation warning */}
-              {!willBeActive && priceCents > 0 && (
-                <div className="flex items-start gap-2 rounded-lg bg-accent/10 border border-accent/20 p-3">
-                  <Info className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+              {priceCents > 0 && (
+                <div className={`flex items-start gap-2 rounded-lg p-3 border ${
+                  !meetsMinimum ? "bg-accent/10 border-accent/20" : "bg-primary/5 border-primary/20"
+                }`}>
+                  <Info className={`h-4 w-4 shrink-0 mt-0.5 ${!meetsMinimum ? "text-accent" : "text-primary"}`} />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground">Ativação mínima: {formatPrice(MIN_ACTIVATION_CENTS)}</p>
-                    <p>Você precisa ter pelo menos R$ 7,00 em anúncios ativos. Faltam {formatPrice(MIN_ACTIVATION_CENTS - totalAfter)}. Seu anúncio ficará pendente até atingir o mínimo.</p>
+                    {!meetsMinimum ? (
+                      <>
+                        <p className="font-medium text-foreground">Ativação mínima: {formatPrice(MIN_ACTIVATION_CENTS)}</p>
+                        <p>Faltam {formatPrice(MIN_ACTIVATION_CENTS - totalAfter)}. Seu anúncio ficará pendente até atingir o mínimo.</p>
+                      </>
+                    ) : (
+                      <p className="font-medium text-foreground">Anúncio será enviado para aprovação de um administrador.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -470,7 +496,7 @@ const CreateListing = () => {
                 ) : (
                   <Check className="mr-2 h-4 w-4" />
                 )}
-                {willBeActive ? "Publicar anúncio" : "Criar anúncio (pendente)"}
+                {meetsMinimum ? "Enviar para aprovação" : "Criar anúncio (pendente)"}
               </Button>
             </div>
           </div>
