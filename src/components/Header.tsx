@@ -1,4 +1,4 @@
-import { Plus, User, Menu, LogOut, Shield, ShoppingBag, UserCircle, LogIn } from "lucide-react";
+import { Plus, User, Menu, LogOut, Shield, ShoppingBag, UserCircle, LogIn, Store, Layers, Trophy, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const navItems = [
+  { label: "Marketplace", href: "/marketplace", icon: Store },
+  { label: "Coleções", href: "/colecoes", icon: Layers },
+  { label: "Torneios", href: "/torneios", icon: Trophy },
+  { label: "Conteúdo", href: "/conteudo", icon: BookOpen },
+];
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,11 +45,29 @@ const Header = () => {
           </span>
         </button>
 
+        {/* Nav links - desktop */}
+        <nav className="hidden items-center gap-1 lg:flex">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                pathname === item.href
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
         {!isHome && (
-          <div className="hidden flex-1 justify-center sm:flex">
+          <div className="hidden flex-1 justify-center sm:flex lg:max-w-sm">
             <SearchAutocomplete
               variant="header"
-              onSearch={(q) => navigate(`/search?q=${encodeURIComponent(q)}`)}
+              onSearch={(q) => navigate(`/?q=${encodeURIComponent(q)}`)}
             />
           </div>
         )}
@@ -112,7 +137,7 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-foreground md:hidden"
+            className="text-muted-foreground hover:text-foreground lg:hidden"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <Menu className="h-5 w-5" />
@@ -121,12 +146,27 @@ const Header = () => {
       </div>
 
       {menuOpen && (
-        <div className="border-t border-border bg-background px-4 py-3 md:hidden">
+        <div className="border-t border-border bg-background px-4 py-3 lg:hidden">
+          {/* Nav links - mobile */}
+          <nav className="mb-3 flex flex-col gap-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
           {!isHome && (
             <div className="mb-3">
               <SearchAutocomplete
                 variant="header"
-                onSearch={(q) => navigate(`/search?q=${encodeURIComponent(q)}`)}
+                onSearch={(q) => { navigate(`/?q=${encodeURIComponent(q)}`); setMenuOpen(false); }}
               />
             </div>
           )}
