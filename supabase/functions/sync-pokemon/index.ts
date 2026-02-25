@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
         name: setData.name || s.name,
         series: setData.serie?.name || null,
         total: setData.cardCount?.total || null,
+        printed_total: setData.cardCount?.official || setData.cardCount?.total || null,
         release_date: setData.releaseDate || null,
         logo: setData.logo ? `${setData.logo}/high.webp` : null,
         symbol: setData.symbol ? `${setData.symbol}/high.webp` : null,

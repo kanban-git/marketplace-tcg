@@ -24,16 +24,17 @@ export interface CardWithMarket extends Card {
 }
 
 function mapCardRow(row: any): Card {
-  const setTotal = row.sets?.total;
+  const setData = Array.isArray(row.sets) ? row.sets[0] : row.sets;
+  const printedTotal = setData?.printed_total ?? setData?.total;
   const num = row.number;
   const formatted =
-    num && setTotal
-      ? `${num.toString().padStart(2, "0")}/${setTotal}`
+    num && printedTotal
+      ? `${num.toString().padStart(2, "0")}/${printedTotal}`
       : num || "—";
   return {
     ...row,
     collection_number: formatted,
-    set_name: row.sets?.name || null,
+    set_name: setData?.name || null,
     sets: undefined,
   } as Card;
 }
@@ -43,16 +44,21 @@ export function useCards(search: string, limit = 100) {
     queryKey: ["cards", search, limit],
     queryFn: async () => {
       const client = supabase as any;
+      const isNumberSearch = /^\d+\/\d+$/.test(search);
+      const isSlashSearch = /^\d+\/$/.test(search);
+      
       let query = client
         .from("cards")
-        .select("*, sets(name, total)")
+        .select(`*, sets${isNumberSearch ? "!inner" : ""}(name, total, printed_total)`)
         .order("name")
         .limit(limit);
 
       if (search) {
-        // Support searching by name or number format like "44/105"
-        if (/^\d+\/\d+$/.test(search)) {
-          const [num] = search.split("/");
+        if (isNumberSearch) {
+          const [num, total] = search.split("/");
+          query = query.eq("number", num).eq("sets.printed_total", parseInt(total));
+        } else if (isSlashSearch) {
+          const num = search.replace("/", "");
           query = query.eq("number", num);
         } else {
           query = query.or(
@@ -117,7 +123,7 @@ export function useTrendingCards() {
       const cardIds = stats.map((s: any) => s.card_id);
       const { data: cards, error: cardsErr } = await client
         .from("cards")
-        .select("*, sets(name, total)")
+        .select("*, sets(name, total, printed_total)")
         .in("id", cardIds);
 
       if (cardsErr) throw cardsErr;
@@ -144,7 +150,7 @@ export function useCardDetail(cardId: string | undefined) {
       const client = supabase as any;
       const { data, error } = await client
         .from("cards")
-        .select("*, sets(name, total, logo, symbol)")
+        .select("*, sets(name, total, printed_total, logo, symbol)")
         .eq("id", cardId)
         .single();
       if (error) throw error;

@@ -208,6 +208,7 @@ export type Database = {
           id: string
           logo: string | null
           name: string
+          printed_total: number | null
           release_date: string | null
           series: string | null
           symbol: string | null
@@ -218,6 +219,7 @@ export type Database = {
           id: string
           logo?: string | null
           name: string
+          printed_total?: number | null
           release_date?: string | null
           series?: string | null
           symbol?: string | null
@@ -228,6 +230,7 @@ export type Database = {
           id?: string
           logo?: string | null
           name?: string
+          printed_total?: number | null
           release_date?: string | null
           series?: string | null
           symbol?: string | null
