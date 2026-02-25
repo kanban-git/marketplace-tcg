@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Eye, Search, ShoppingCart, Image, Download, ExternalLink, CalendarIcon } from "lucide-react";
+import { Eye, Search, ShoppingCart, Image, Download, ExternalLink, CalendarIcon, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -140,8 +140,15 @@ const AdminAnalytics = () => {
   const topCollections = useMemo(() => topByEvent("view_collection"), [events]);
   const topBanners = useMemo(() => topByEvent("click_banner"), [events]);
 
-  const exportCsv = (rows: { id: string; count: number }[], filename: string) => {
-    const csv = "entity_id,count\n" + rows.map((r) => `${r.id},${r.count}`).join("\n");
+  const exportCardCsv = (rows: { id: string; count: number }[], countLabel: string, filename: string) => {
+    const header = `card_name,card_id,collection_name,display_number,${countLabel}`;
+    const lines = rows.map((r) => {
+      const d = formatCardDisplay(r.id);
+      const card = cardsMap[r.id];
+      const colName = card?.sets?.name || "";
+      return `"${d.name}","${r.id}","${colName}","${d.number}",${r.count}`;
+    });
+    const csv = [header, ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -192,6 +199,10 @@ const AdminAnalytics = () => {
     };
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   const CardRankingTable = ({ rows, eventLabel }: { rows: { id: string; count: number }[]; eventLabel: string }) => (
     <div className="overflow-hidden rounded-xl border border-border">
       <table className="w-full text-sm">
@@ -199,13 +210,14 @@ const AdminAnalytics = () => {
           <tr className="border-b border-border bg-secondary/50">
             <th className="px-4 py-3 text-left font-medium text-muted-foreground w-10">#</th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Carta</th>
+            <th className="px-4 py-3 text-left font-medium text-muted-foreground">ID</th>
             <th className="px-4 py-3 text-right font-medium text-muted-foreground">{eventLabel}</th>
             <th className="px-4 py-3 w-10" />
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Sem dados no período.</td></tr>
+            <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Sem dados no período.</td></tr>
           ) : rows.map((r, i) => {
             const d = formatCardDisplay(r.id);
             return (
@@ -214,6 +226,14 @@ const AdminAnalytics = () => {
                 <td className="px-4 py-3">
                   <span className="font-medium text-foreground">{d.name}</span>
                   {d.sub && <span className="ml-2 text-xs text-muted-foreground">{d.sub}</span>}
+                </td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-1">
+                    <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{r.id}</code>
+                    <button onClick={() => copyToClipboard(r.id)} className="text-muted-foreground hover:text-primary" title="Copiar ID">
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-right font-display font-bold text-primary">{r.count}</td>
                 <td className="px-4 py-3">
@@ -331,13 +351,18 @@ const AdminAnalytics = () => {
           <TabsContent value="cards" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-bold text-foreground">Views por carta</h2>
-              <Button size="sm" variant="outline" onClick={() => exportCsv(topCards, `top-cards-${preset}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCardCsv(topCards, "views", `top-cards-views-${preset}.csv`)}>
                 <Download className="mr-1 h-3.5 w-3.5" /> CSV
               </Button>
             </div>
             <CardRankingTable rows={topCards} eventLabel="Views" />
 
-            <h2 className="font-display text-lg font-bold text-foreground">Clicks "Comprar" por carta</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold text-foreground">Clicks "Comprar" por carta</h2>
+              <Button size="sm" variant="outline" onClick={() => exportCardCsv(topBuyClicks, "clicks", `top-cards-clicks-${preset}.csv`)}>
+                <Download className="mr-1 h-3.5 w-3.5" /> CSV
+              </Button>
+            </div>
             <CardRankingTable rows={topBuyClicks} eventLabel="Clicks" />
           </TabsContent>
 
