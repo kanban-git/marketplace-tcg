@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCards } from "@/hooks/useCards";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -88,39 +89,21 @@ const CreateListing = () => {
     setTimer(t);
   };
 
-  // Search cards
-  const { data: searchResults, isLoading: searching } = useQuery({
-    queryKey: ["create-listing-search", debouncedSearch],
-    queryFn: async () => {
-      if (!debouncedSearch || debouncedSearch.length < 2) return [];
-      const isNum = /^\d+\/?\d*$/.test(debouncedSearch);
-      let query = (supabase as any)
-        .from("cards")
-        .select("id, name, number, rarity, image_small, image_ptbr, set_id, sets(name, printed_total, total)")
-        .limit(20);
-      if (isNum) {
-        const num = debouncedSearch.split("/")[0];
-        query = query.eq("number", num);
-      } else {
-        query = query.ilike("name", `%${debouncedSearch}%`);
-      }
-      const { data } = await query;
-      return (data || []).map((row: any) => {
-        const setData = Array.isArray(row.sets) ? row.sets[0] : row.sets;
-        return {
-          id: row.id,
-          name: row.name,
-          number: row.number,
-          rarity: row.rarity,
-          image_small: row.image_small,
-          image_ptbr: row.image_ptbr,
-          set_name: setData?.name || null,
-          printed_total: setData?.printed_total ?? setData?.total,
-        };
-      });
-    },
-    enabled: debouncedSearch.length >= 2,
-  });
+  // Search cards — reuse the same hook/logic as Home
+  const { data: rawSearchResults, isLoading: searching } = useCards(debouncedSearch, 20);
+  const searchResults = useMemo(() => {
+    if (!rawSearchResults) return undefined;
+    return rawSearchResults.map((card) => ({
+      id: card.id,
+      name: card.name,
+      number: card.number,
+      rarity: card.rarity,
+      image_small: card.image_small,
+      image_ptbr: card.image_ptbr,
+      set_name: card.set_name,
+      printed_total: null as number | null,
+    }));
+  }, [rawSearchResults]);
 
   // Fetch market stats for selected card
   const { data: marketStats } = useQuery({
