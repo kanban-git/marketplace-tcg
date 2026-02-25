@@ -220,6 +220,8 @@ export type Database = {
           city: string | null
           condition: string
           created_at: string
+          entity_id: string | null
+          entity_type: string
           finish: string
           id: string
           language: string
@@ -236,6 +238,8 @@ export type Database = {
           city?: string | null
           condition?: string
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string
           finish?: string
           id?: string
           language?: string
@@ -252,6 +256,8 @@ export type Database = {
           city?: string | null
           condition?: string
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string
           finish?: string
           id?: string
           language?: string
@@ -279,6 +285,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_items: {
+        Row: {
+          brand: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image: string | null
+          name: string
+        }
+        Insert: {
+          brand?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image?: string | null
+          name: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image?: string | null
+          name?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -489,6 +525,8 @@ export type Database = {
           city: string | null
           condition: string
           created_at: string
+          entity_id: string | null
+          entity_type: string
           finish: string
           id: string
           language: string
