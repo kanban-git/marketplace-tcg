@@ -21,6 +21,7 @@ import AdminBanners from "./pages/admin/AdminBanners";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 import Collections from "./pages/Collections";
+import Marketplace from "./pages/Marketplace";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/colecoes" element={<Collections />} />
+            <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/pokemon/cards/:cardId" element={<CardDetail />} />
             <Route path="/sets/:setId" element={<SetDetail />} />
             <Route path="/login" element={<Login />} />
