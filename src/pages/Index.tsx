@@ -3,11 +3,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HeroSearch from "@/components/home/HeroSearch";
 import BannerCarousel from "@/components/home/BannerCarousel";
-import FeaturedListings from "@/components/home/FeaturedListings";
-import CollectionsCarousel from "@/components/home/CollectionsCarousel";
-import TrendingCardsRow from "@/components/home/TrendingCardsRow";
+import QuickActions from "@/components/home/QuickActions";
 import RecentListingsRow from "@/components/home/RecentListingsRow";
-import CommunityTabs from "@/components/home/CommunityTabs";
 import CardGrid from "@/components/CardGrid";
 import { useCards } from "@/hooks/useCards";
 
@@ -65,35 +62,18 @@ const Index = () => {
             </section>
           </div>
         ) : (
-          <div className="space-y-14">
+          <div className="space-y-8 py-8">
             {/* Banner */}
-            <div className="container mx-auto px-4 pt-8">
+            <div className="container mx-auto px-4">
               <BannerCarousel />
             </div>
 
-            {/* Featured Listings (Marketplace) */}
-            <div className="container mx-auto px-4">
-              <FeaturedListings />
-            </div>
+            {/* Quick Actions */}
+            <QuickActions />
 
-            {/* Collections */}
-            <div className="container mx-auto px-4">
-              <CollectionsCarousel />
-            </div>
-
-            {/* Trending */}
-            <div className="container mx-auto px-4">
-              <TrendingCardsRow />
-            </div>
-
-            {/* Recent Listings */}
-            <div className="container mx-auto px-4">
+            {/* Compact recent listings preview */}
+            <div className="container mx-auto px-4 pb-4">
               <RecentListingsRow />
-            </div>
-
-            {/* Community */}
-            <div className="container mx-auto px-4 pb-10">
-              <CommunityTabs />
             </div>
           </div>
         )}
