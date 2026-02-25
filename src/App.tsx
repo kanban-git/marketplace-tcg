@@ -26,6 +26,8 @@ import Community from "./pages/Community";
 import GuideDetail from "./pages/GuideDetail";
 import Products from "./pages/Products";
 import Accessories from "./pages/Accessories";
+import CreateListing from "./pages/CreateListing";
+import SellerDashboard from "./pages/SellerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,8 @@ const App = () => (
             <Route path="/guia/:slug" element={<GuideDetail />} />
             <Route path="/pokemon/cards/:cardId" element={<CardDetail />} />
             <Route path="/sets/:setId" element={<SetDetail />} />
+            <Route path="/anunciar" element={<CreateListing />} />
+            <Route path="/perfil" element={<SellerDashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -79,7 +79,7 @@ const Header = () => {
               <Button
                 size="sm"
                 className="hidden gap-1.5 sm:flex"
-                onClick={() => toast.success("Criar anúncio em breve!", { description: "Essa funcionalidade será liberada em breve." })}
+                onClick={() => navigate("/anunciar")}
               >
                 <Plus className="h-4 w-4" />
                 Anunciar
@@ -96,11 +96,11 @@ const Header = () => {
                     <p className="text-sm font-medium text-foreground">{profile?.display_name ?? "Usuário"}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => toast("Em breve!")}>
+                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
                     <UserCircle className="mr-2 h-4 w-4" />
                     Meu perfil
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toast("Em breve!")}>
+                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
                     Meus anúncios
                   </DropdownMenuItem>
@@ -175,7 +175,7 @@ const Header = () => {
             <Button
               size="sm"
               className="w-full gap-1.5"
-              onClick={() => toast.success("Criar anúncio em breve!")}
+              onClick={() => { navigate("/anunciar"); setMenuOpen(false); }}
             >
               <Plus className="h-4 w-4" />
               Anunciar

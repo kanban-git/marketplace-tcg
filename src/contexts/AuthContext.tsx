@@ -11,6 +11,7 @@ interface Profile {
   city: string | null;
   state: string | null;
   status: string;
+  reputation_score: number | null;
 }
 
 interface AuthContextType {
