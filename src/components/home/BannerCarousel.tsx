@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -17,11 +17,50 @@ interface Banner {
   order: number;
 }
 
+const DEFAULT_BANNERS: Banner[] = [
+  {
+    id: "default-1",
+    title: "Anuncie suas cartas",
+    subtitle: "Venda suas cartas Pokémon de forma rápida e segura.",
+    cta_text: "Criar anúncio",
+    cta_url: "/anunciar",
+    link_url: null,
+    media_desktop_url: "/placeholder.svg",
+    media_tablet_url: null,
+    media_mobile_url: null,
+    order: 90,
+  },
+  {
+    id: "default-2",
+    title: "Explore coleções",
+    subtitle: "Descubra todas as coleções e encontre as cartas que faltam.",
+    cta_text: "Ver coleções",
+    cta_url: "/colecoes",
+    link_url: null,
+    media_desktop_url: "/placeholder.svg",
+    media_tablet_url: null,
+    media_mobile_url: null,
+    order: 91,
+  },
+  {
+    id: "default-3",
+    title: "Participe da comunidade",
+    subtitle: "Conecte-se com outros colecionadores e jogadores.",
+    cta_text: "Ver comunidade",
+    cta_url: "/comunidade",
+    link_url: null,
+    media_desktop_url: "/placeholder.svg",
+    media_tablet_url: null,
+    media_mobile_url: null,
+    order: 92,
+  },
+];
+
 const BannerCarousel = () => {
   const [current, setCurrent] = useState(0);
   const isMobile = useIsMobile();
 
-  const { data: banners = [] } = useQuery({
+  const { data: apiBanners = [] } = useQuery({
     queryKey: ["active-banners"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -30,7 +69,6 @@ const BannerCarousel = () => {
         .eq("is_active", true)
         .order("order", { ascending: true });
       if (error) throw error;
-      // Client-side filter for scheduling (RLS already handles this, but belt-and-suspenders)
       const now = new Date();
       return (data as Banner[]).filter((b) => {
         if ((b as any).starts_at && new Date((b as any).starts_at) > now) return false;
@@ -40,6 +78,15 @@ const BannerCarousel = () => {
     },
     staleTime: 60_000,
   });
+
+  const banners = useMemo(() => {
+    if (apiBanners.length >= 3) return apiBanners;
+    if (apiBanners.length === 0) return DEFAULT_BANNERS;
+    const needed = 3 - apiBanners.length;
+    const existingIds = new Set(apiBanners.map((b) => b.id));
+    const fill = DEFAULT_BANNERS.filter((d) => !existingIds.has(d.id)).slice(0, needed);
+    return [...apiBanners, ...fill];
+  }, [apiBanners]);
 
   useEffect(() => {
     if (banners.length <= 1) return;
@@ -54,8 +101,6 @@ const BannerCarousel = () => {
       setCurrent(0);
     }
   }, [banners.length, current]);
-
-  if (banners.length === 0) return null;
 
   const banner = banners[current];
 
