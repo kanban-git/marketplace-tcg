@@ -67,9 +67,9 @@ const AdminListings = () => {
     },
   });
 
-  // Calculate seller totals for activation check
+  // Calculate seller effective totals (active + pending_review)
   const sellerTotals = listings.reduce((acc: Record<string, number>, l: any) => {
-    if (l.status === "active") {
+    if (["active", "pending_review"].includes(l.status)) {
       acc[l.seller_id] = (acc[l.seller_id] || 0) + l.price_cents;
     }
     return acc;
@@ -83,6 +83,7 @@ const AdminListings = () => {
 
       await supabase.from("listings").update({
         status: newStatus,
+        is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: currentUser!.id,
       } as any).eq("id", id);
@@ -94,12 +95,10 @@ const AdminListings = () => {
         entity_id: id,
       });
 
-      // If active, also activate any other approved pending_minimum listings
+      // Recalculate all seller listings
+      await supabase.rpc("recalculate_user_minimum_status", { p_user_id: sellerId });
+
       if (meetsMinimum) {
-        await supabase.from("listings").update({ status: "active" } as any)
-          .eq("seller_id", sellerId)
-          .eq("status", "pending_minimum")
-          .not("approved_at", "is", null);
 
         await createNotification({
           user_id: sellerId,
@@ -176,6 +175,7 @@ const AdminListings = () => {
           </TabsTrigger>
           <TabsTrigger value="pending_minimum">Mínimo</TabsTrigger>
           <TabsTrigger value="active">Ativos</TabsTrigger>
+          <TabsTrigger value="paused">Pausados</TabsTrigger>
           <TabsTrigger value="rejected">Reprovados</TabsTrigger>
         </TabsList>
 

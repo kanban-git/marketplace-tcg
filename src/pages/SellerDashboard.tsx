@@ -53,24 +53,42 @@ const SellerDashboard = () => {
   });
 
   const activeListings = (listings || []).filter((l: any) => l.status === "active");
-  const pendingListings = (listings || []).filter((l: any) => ["pending_review", "pending_minimum", "pending_activation"].includes(l.status));
+  const pendingListings = (listings || []).filter((l: any) => ["pending_review", "pending_minimum"].includes(l.status));
+  const pausedListings = (listings || []).filter((l: any) => l.status === "paused");
   const soldListings = (listings || []).filter((l: any) => l.status === "sold");
 
-  const totalActiveValue = activeListings.reduce((s: number, l: any) => s + l.price_cents, 0);
+  const effectiveValue = (listings || [])
+    .filter((l: any) => ["active", "pending_review"].includes(l.status))
+    .reduce((s: number, l: any) => s + l.price_cents, 0);
   const totalSold = soldListings.reduce((s: number, l: any) => s + l.price_cents, 0);
   const totalReceived = soldListings.reduce((s: number, l: any) => s + l.net_amount, 0);
 
   const toggleStatus = useMutation({
-    mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
-      const { error } = await supabase
-        .from("listings")
-        .update({ status: newStatus })
-        .eq("id", id)
-        .eq("seller_id", user!.id);
-      if (error) throw error;
+    mutationFn: async ({ id, currentListing }: { id: string; currentListing: any }) => {
+      if (currentListing.status === "active") {
+        // Pause: active -> paused
+        const { error } = await supabase
+          .from("listings")
+          .update({ status: "paused" } as any)
+          .eq("id", id)
+          .eq("seller_id", user!.id);
+        if (error) throw error;
+      } else if (currentListing.status === "paused") {
+        // Reactivate: paused -> pending_review (if not approved) or active (if approved)
+        const newStatus = currentListing.is_approved ? "active" : "pending_review";
+        const { error } = await supabase
+          .from("listings")
+          .update({ status: newStatus } as any)
+          .eq("id", id)
+          .eq("seller_id", user!.id);
+        if (error) throw error;
+      }
+      // Recalculate minimum status for all user listings
+      await supabase.rpc("recalculate_user_minimum_status", { p_user_id: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seller-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["seller-effective-value"] });
       toast.success("Status atualizado!");
     },
   });
@@ -108,7 +126,7 @@ const SellerDashboard = () => {
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: "Anúncios ativos", value: activeListings.length, icon: ShoppingBag, color: "text-primary" },
-            { label: "Valor ativo", value: formatPrice(totalActiveValue), icon: TrendingUp, color: "text-primary" },
+            { label: "Valor efetivo", value: formatPrice(effectiveValue), icon: TrendingUp, color: "text-primary" },
             { label: "Total vendido", value: formatPrice(totalSold), icon: DollarSign, color: "text-green-500" },
             { label: "Reputação", value: profile?.reputation_score ?? 0, icon: Star, color: "text-accent" },
           ].map((stat) => (
@@ -123,16 +141,19 @@ const SellerDashboard = () => {
         </div>
 
         {/* Activation warning */}
-        {pendingListings.length > 0 && totalActiveValue < MIN_ACTIVATION_CENTS && (
+        {pendingListings.length > 0 && effectiveValue < MIN_ACTIVATION_CENTS && (
           <div className="mb-6 flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/5 p-4">
             <Info className="h-5 w-5 text-accent shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-foreground text-sm">
-                {pendingListings.length} anúncio{pendingListings.length > 1 ? "s" : ""} pendente{pendingListings.length > 1 ? "s" : ""} de ativação
-              </p>
+              <p className="font-medium text-foreground text-sm">Ativação mínima: R$ 7,00</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Você precisa de pelo menos R$ 7,00 em anúncios ativos. Faltam {formatPrice(MIN_ACTIVATION_CENTS - totalActiveValue)}.
+                Faltam {formatPrice(MIN_ACTIVATION_CENTS - effectiveValue)} para seus anúncios serem exibidos no marketplace. Cadastre novos anúncios para atingir o mínimo.
               </p>
+              {pausedListings.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ou ative anúncios pausados para somar ao valor total.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -203,7 +224,7 @@ const SellerDashboard = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7"
-                                onClick={() => toggleStatus.mutate({ id: listing.id, newStatus: "paused" })}
+                                onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
                                 title="Pausar"
                               >
                                 <PowerOff className="h-3.5 w-3.5" />
@@ -214,7 +235,7 @@ const SellerDashboard = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7"
-                                onClick={() => toggleStatus.mutate({ id: listing.id, newStatus: "active" })}
+                                onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
                                 title="Reativar"
                               >
                                 <Power className="h-3.5 w-3.5" />
