@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { parseCardSearch, formatCollectorNumber } from "@/lib/cardUtils";
 
 export type MarketTab = "popular" | "most_listed" | "lowest_price" | "highest_price";
 
@@ -81,13 +82,22 @@ export function useMarketplace(filters: MarketplaceFilters) {
         .limit(1000);
 
       if (filters.search) {
-        const s = filters.search;
-        const isNum = /^\d+\/\d+$/.test(s);
-        if (isNum) {
-          const [num, total] = s.split("/");
-          query = query.eq("number", num);
-        } else {
-          query = query.or(`name.ilike.%${s}%`);
+        const parsed = parseCardSearch(filters.search);
+        switch (parsed.kind) {
+          case "exact_number":
+            query = query.eq("number", parsed.number);
+            break;
+          case "prefix_number":
+            query = query.eq("number", parsed.number);
+            break;
+          case "plain_number":
+            query = query.eq("number", parsed.number);
+            break;
+          case "text":
+            if (parsed.query) {
+              query = query.or(`name.ilike.%${parsed.query}%`);
+            }
+            break;
         }
       }
       if (filters.sets.length > 0) {
@@ -106,11 +116,8 @@ export function useMarketplace(filters: MarketplaceFilters) {
       // 4) Map and enrich
       let cards: MarketCard[] = (cardsRaw || []).map((row: any) => {
         const setData = Array.isArray(row.sets) ? row.sets[0] : row.sets;
-        const printedTotal = setData?.printed_total ?? setData?.total;
-        const num = row.number;
-        const displayNumber = num && printedTotal
-          ? `${num.toString().padStart(2, "0")}/${printedTotal}`
-          : num || "—";
+        const printedTotal = setData?.printed_total ?? setData?.total ?? null;
+        const displayNumber = formatCollectorNumber(row.number, printedTotal);
 
         const stat = statsMap.get(row.id);
         const activeListings = stat?.offers || 0;
@@ -140,6 +147,13 @@ export function useMarketplace(filters: MarketplaceFilters) {
       });
 
       // 5) Apply client-side filters
+      // For exact number search (e.g. "071/182"), filter by printed_total too
+      if (filters.search) {
+        const parsed = parseCardSearch(filters.search);
+        if (parsed.kind === "exact_number") {
+          cards = cards.filter((c) => c.printed_total === parsed.total);
+        }
+      }
       if (filters.onlyWithListings) {
         cards = cards.filter((c) => c.active_listings > 0);
       }

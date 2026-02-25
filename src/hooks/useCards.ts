@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { parseCardSearch, formatCollectorNumber, formatCardSubtitle } from "@/lib/cardUtils";
 
 export interface Card {
   id: string;
@@ -15,6 +16,7 @@ export interface Card {
   created_at: string;
   collection_number: string;
   set_name: string | null;
+  printed_total: number | null;
 }
 
 export interface CardWithMarket extends Card {
@@ -25,16 +27,12 @@ export interface CardWithMarket extends Card {
 
 function mapCardRow(row: any): Card {
   const setData = Array.isArray(row.sets) ? row.sets[0] : row.sets;
-  const printedTotal = setData?.printed_total ?? setData?.total;
-  const num = row.number;
-  const formatted =
-    num && printedTotal
-      ? `${num.toString().padStart(2, "0")}/${printedTotal}`
-      : num || "—";
+  const printedTotal = setData?.printed_total ?? setData?.total ?? null;
   return {
     ...row,
-    collection_number: formatted,
+    collection_number: formatCollectorNumber(row.number, printedTotal),
     set_name: setData?.name || null,
+    printed_total: printedTotal,
     sets: undefined,
   } as Card;
 }
@@ -44,27 +42,35 @@ export function useCards(search: string, limit = 100) {
     queryKey: ["cards", search, limit],
     queryFn: async () => {
       const client = supabase as any;
-      const isNumberSearch = /^\d+\/\d+$/.test(search);
-      const isSlashSearch = /^\d+\/$/.test(search);
-      
+      const parsed = parseCardSearch(search);
+
+      const needsInnerJoin = parsed.kind === "exact_number";
       let query = client
         .from("cards")
-        .select(`*, sets${isNumberSearch ? "!inner" : ""}(name, total, printed_total)`)
+        .select(`*, sets${needsInnerJoin ? "!inner" : ""}(name, total, printed_total)`)
         .order("name")
         .limit(limit);
 
-      if (search) {
-        if (isNumberSearch) {
-          const [num, total] = search.split("/");
-          query = query.eq("number", num).eq("sets.printed_total", parseInt(total));
-        } else if (isSlashSearch) {
-          const num = search.replace("/", "");
-          query = query.eq("number", num);
-        } else {
-          query = query.or(
-            `name.ilike.%${search}%,sets.name.ilike.%${search}%`
-          );
-        }
+      switch (parsed.kind) {
+        case "exact_number":
+          // "071/182" → match card number AND set printed_total
+          query = query.eq("number", parsed.number).eq("sets.printed_total", parsed.total);
+          break;
+        case "prefix_number":
+          // "071/" → all cards with that number
+          query = query.eq("number", parsed.number);
+          break;
+        case "plain_number":
+          // "71" → match as number
+          query = query.eq("number", parsed.number);
+          break;
+        case "text":
+          if (parsed.query) {
+            query = query.or(
+              `name.ilike.%${parsed.query}%,sets.name.ilike.%${parsed.query}%`
+            );
+          }
+          break;
       }
 
       const { data, error } = await query;

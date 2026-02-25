@@ -308,7 +308,7 @@ const Marketplace = () => {
                           {card.name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {card.display_number}
+                          {card.display_number}{card.set_name ? ` · ${card.set_name}` : ""}
                         </p>
                         {card.set_name && (
                           <Badge variant="outline" className="mt-1.5 w-fit text-[10px] px-1.5 py-0">
