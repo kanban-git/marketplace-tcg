@@ -17,6 +17,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminLogs from "./pages/admin/AdminLogs";
+import AdminBanners from "./pages/admin/AdminBanners";
 import NotFound from "./pages/NotFound";
 import Collections from "./pages/Collections";
 
@@ -49,6 +50,7 @@ const App = () => (
               }
             >
               <Route index element={<AdminDashboard />} />
+              <Route path="banners" element={<AdminBanners />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="listings" element={<AdminListings />} />
               <Route path="logs" element={<AdminLogs />} />

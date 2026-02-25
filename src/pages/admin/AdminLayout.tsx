@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingBag, ScrollText, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, ScrollText, ArrowLeft, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { to: "/admin/banners", icon: Image, label: "Banners" },
   { to: "/admin/users", icon: Users, label: "Usuários" },
   { to: "/admin/listings", icon: ShoppingBag, label: "Anúncios" },
   { to: "/admin/logs", icon: ScrollText, label: "Audit Log" },

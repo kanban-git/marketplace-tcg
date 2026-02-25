@@ -1,97 +1,159 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-interface Slide {
-  title: string;
-  description: string;
-  cta: string;
-  href: string;
-  gradient: string;
+interface Banner {
+  id: string;
+  title: string | null;
+  subtitle: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+  link_url: string | null;
+  media_desktop_url: string;
+  media_tablet_url: string | null;
+  media_mobile_url: string | null;
+  order: number;
 }
-
-const slides: Slide[] = [
-  {
-    title: "Scarlet & Violet — Destinos de Paldea",
-    description: "Confira as cartas da coleção mais recente",
-    cta: "Ver coleção",
-    href: "#colecoes",
-    gradient: "from-purple-900/40 to-secondary/60",
-  },
-  {
-    title: "Anuncie suas cartas",
-    description: "Cadastre-se e comece a vender agora mesmo",
-    cta: "Criar anúncio",
-    href: "/anunciar",
-    gradient: "from-primary/20 to-secondary/60",
-  },
-  {
-    title: "Comunidade TCGHub",
-    description: "Conecte-se com colecionadores e jogadores",
-    cta: "Saiba mais",
-    href: "#comunidade",
-    gradient: "from-blue-900/40 to-secondary/60",
-  },
-];
 
 const BannerCarousel = () => {
   const [current, setCurrent] = useState(0);
+  const isMobile = useIsMobile();
+
+  const { data: banners = [] } = useQuery({
+    queryKey: ["active-banners"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("*")
+        .eq("is_active", true)
+        .order("order", { ascending: true });
+      if (error) throw error;
+      // Client-side filter for scheduling (RLS already handles this, but belt-and-suspenders)
+      const now = new Date();
+      return (data as Banner[]).filter((b) => {
+        if ((b as any).starts_at && new Date((b as any).starts_at) > now) return false;
+        if ((b as any).ends_at && new Date((b as any).ends_at) < now) return false;
+        return true;
+      });
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
+    if (banners.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrent((c) => (c + 1) % slides.length);
+      setCurrent((c) => (c + 1) % banners.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [banners.length]);
 
-  const slide = slides[current];
+  useEffect(() => {
+    if (current >= banners.length && banners.length > 0) {
+      setCurrent(0);
+    }
+  }, [banners.length, current]);
+
+  if (banners.length === 0) return null;
+
+  const banner = banners[current];
+
+  const getMediaUrl = (b: Banner) => {
+    if (isMobile) {
+      return b.media_mobile_url || b.media_tablet_url || b.media_desktop_url;
+    }
+    // Simplified: no tablet detection, use desktop. Tablet gets media_tablet_url via CSS if needed.
+    return b.media_desktop_url;
+  };
+
+  const hasCta = banner.cta_text && banner.cta_url;
+  const isClickable = !hasCta && banner.link_url;
+
+  const Wrapper = isClickable ? "a" : "div";
+  const wrapperProps = isClickable ? { href: banner.link_url!, className: "block" } : {};
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border">
-      <div
-        className={`flex items-center justify-between gap-6 bg-gradient-to-r ${slide.gradient} px-6 py-6 md:px-10 md:py-8 transition-all duration-500`}
-      >
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display text-lg font-bold text-foreground md:text-xl">
-            {slide.title}
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {slide.description}
-          </p>
-          <a
-            href={slide.href}
-            className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            {slide.cta}
-          </a>
+      <Wrapper {...wrapperProps}>
+        <div className="relative">
+          {/* Desktop image */}
+          <img
+            src={banner.media_desktop_url}
+            alt={banner.title ?? "Banner"}
+            className="hidden h-[200px] w-full object-cover md:block lg:h-[280px]"
+          />
+          {/* Tablet image */}
+          <img
+            src={banner.media_tablet_url || banner.media_desktop_url}
+            alt={banner.title ?? "Banner"}
+            className="hidden h-[200px] w-full object-cover sm:block md:hidden"
+          />
+          {/* Mobile image */}
+          <img
+            src={banner.media_mobile_url || banner.media_tablet_url || banner.media_desktop_url}
+            alt={banner.title ?? "Banner"}
+            className="block h-[180px] w-full object-cover sm:hidden"
+          />
+
+          {/* Overlay with text */}
+          {(banner.title || banner.subtitle || hasCta) && (
+            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-background/80 via-background/20 to-transparent p-5 md:p-8">
+              <div>
+                {banner.title && (
+                  <h3 className="font-display text-lg font-bold text-foreground md:text-xl">
+                    {banner.title}
+                  </h3>
+                )}
+                {banner.subtitle && (
+                  <p className="mt-1 text-sm text-muted-foreground">{banner.subtitle}</p>
+                )}
+                {hasCta && (
+                  <a
+                    href={banner.cta_url!}
+                    className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    {banner.cta_text}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </Wrapper>
 
       {/* Dots */}
-      <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              i === current ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/40"
-            }`}
-          />
-        ))}
-      </div>
+      {banners.length > 1 && (
+        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+          {banners.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`h-1.5 rounded-full transition-all ${
+                i === current ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/40"
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Arrows */}
-      <button
-        onClick={() => setCurrent((c) => (c - 1 + slides.length) % slides.length)}
-        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/60 p-1 text-foreground/60 hover:bg-background/80"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
-      <button
-        onClick={() => setCurrent((c) => (c + 1) % slides.length)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/60 p-1 text-foreground/60 hover:bg-background/80"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
+      {banners.length > 1 && (
+        <>
+          <button
+            onClick={() => setCurrent((c) => (c - 1 + banners.length) % banners.length)}
+            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/60 p-1 text-foreground/60 hover:bg-background/80"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setCurrent((c) => (c + 1) % banners.length)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/60 p-1 text-foreground/60 hover:bg-background/80"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </>
+      )}
     </div>
   );
 };
