@@ -222,9 +222,12 @@ export type Database = {
           created_at: string
           entity_id: string | null
           entity_type: string
+          fee_amount: number
           finish: string
           id: string
           language: string
+          net_amount: number
+          notes: string | null
           price_cents: number
           quantity: number
           seller_id: string
@@ -240,9 +243,12 @@ export type Database = {
           created_at?: string
           entity_id?: string | null
           entity_type?: string
+          fee_amount?: number
           finish?: string
           id?: string
           language?: string
+          net_amount?: number
+          notes?: string | null
           price_cents: number
           quantity?: number
           seller_id: string
@@ -258,9 +264,12 @@ export type Database = {
           created_at?: string
           entity_id?: string | null
           entity_type?: string
+          fee_amount?: number
           finish?: string
           id?: string
           language?: string
+          net_amount?: number
+          notes?: string | null
           price_cents?: number
           quantity?: number
           seller_id?: string
@@ -527,9 +536,12 @@ export type Database = {
           created_at: string
           entity_id: string | null
           entity_type: string
+          fee_amount: number
           finish: string
           id: string
           language: string
+          net_amount: number
+          notes: string | null
           price_cents: number
           quantity: number
           seller_id: string
