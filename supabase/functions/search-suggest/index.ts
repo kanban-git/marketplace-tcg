@@ -51,12 +51,13 @@ Deno.serve(async (req) => {
       data.map((c: any) => {
         const s = statsMap.get(c.id);
         const setData = Array.isArray(c.sets) ? c.sets[0] : c.sets;
+        const printedTotal = setData?.printed_total ?? setData?.total ?? 0;
         return {
           id: c.id,
           name: c.name,
           number: c.number,
           setName: setData?.name || "",
-          setTotal: setData?.total || 0,
+          setTotal: printedTotal,
           releaseYear: setData?.release_date ? parseInt(setData.release_date.substring(0, 4)) : null,
           image: c.image_small,
           minPriceCents: s?.min_price_cents || null,
@@ -85,12 +86,12 @@ Deno.serve(async (req) => {
       // Fetch cards matching any number variant, with set join
       let query = supabase
         .from("cards")
-        .select("id, name, number, image_small, set_id, sets!inner(name, total, release_date)")
+        .select("id, name, number, image_small, set_id, sets!inner(name, total, printed_total, release_date)")
         .in("number", numVariants);
 
       if (total) {
-        // Full pattern "1/53" - exact total match
-        query = query.eq("sets.total", parseInt(total));
+        // Full pattern "1/53" - match against printed_total
+        query = query.eq("sets.printed_total", parseInt(total));
       }
       // For partial "1/" - no total filter, get from all sets
 
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
       const numVariants = normalizeNumbers(num);
       const { data } = await supabase
         .from("cards")
-        .select("id, name, number, image_small, set_id, sets(name, total, release_date)")
+        .select("id, name, number, image_small, set_id, sets(name, total, printed_total, release_date)")
         .in("number", numVariants)
         .order("created_at", { ascending: false })
         .limit(6);
@@ -124,7 +125,7 @@ Deno.serve(async (req) => {
       const [cardsResult, setsResult] = await Promise.all([
         supabase
           .from("cards")
-          .select("id, name, number, image_small, set_id, sets(name, total, release_date)")
+          .select("id, name, number, image_small, set_id, sets(name, total, printed_total, release_date)")
           .ilike("name", searchTerm)
           .limit(8),
         supabase
@@ -152,12 +153,13 @@ Deno.serve(async (req) => {
           const setData = Array.isArray(c.sets) ? c.sets[0] : c.sets;
           const nameL = c.name.toLowerCase();
           const score = nameL.startsWith(lowerQ) ? 0 : nameL.includes(lowerQ) ? 1 : 2;
+          const printedTotal = setData?.printed_total ?? setData?.total ?? 0;
           return {
             id: c.id,
             name: c.name,
             number: c.number,
             setName: setData?.name || "",
-            setTotal: setData?.total || 0,
+            setTotal: printedTotal,
             releaseYear: setData?.release_date ? parseInt(setData.release_date.substring(0, 4)) : null,
             image: c.image_small,
             minPriceCents: s?.min_price_cents || null,
