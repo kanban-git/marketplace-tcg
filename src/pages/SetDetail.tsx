@@ -76,22 +76,23 @@ const SetDetail = () => {
       const client = supabase as any;
       const { data, error } = await client
         .from("cards")
-        .select("*, sets(name, total)")
+        .select("*, sets(name, total, printed_total)")
         .eq("set_id", setId)
         .order("number")
         .limit(500);
       if (error) throw error;
       return (data || []).map((row: any) => {
-        const setTotal = row.sets?.total;
+        const setData = Array.isArray(row.sets) ? row.sets[0] : row.sets;
+        const printedTotal = setData?.printed_total ?? setData?.total;
         const num = row.number;
         const formatted =
-          num && setTotal
-            ? `${num.toString().padStart(2, "0")}/${setTotal}`
+          num && printedTotal
+            ? `${num.toString().padStart(2, "0")}/${printedTotal}`
             : num || "—";
         return {
           ...row,
           collection_number: formatted,
-          set_name: row.sets?.name || null,
+          set_name: setData?.name || null,
           sets: undefined,
         } as Card;
       });
