@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import HeroSearch from "@/components/home/HeroSearch";
 import BannerCarousel from "@/components/home/BannerCarousel";
 import QuickActions from "@/components/home/QuickActions";
-import RecentListingsRow from "@/components/home/RecentListingsRow";
+
 import CardGrid from "@/components/CardGrid";
 import { useCards } from "@/hooks/useCards";
 
@@ -63,18 +63,10 @@ const Index = () => {
           </div>
         ) : (
           <div className="space-y-8 py-8">
-            {/* Banner */}
             <div className="container mx-auto px-4">
               <BannerCarousel />
             </div>
-
-            {/* Quick Actions */}
             <QuickActions />
-
-            {/* Compact recent listings preview */}
-            <div className="container mx-auto px-4 pb-4">
-              <RecentListingsRow />
-            </div>
           </div>
         )}
       </main>

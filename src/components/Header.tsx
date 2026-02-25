@@ -1,4 +1,4 @@
-import { Plus, User, Menu, LogOut, Shield, ShoppingBag, UserCircle, LogIn, Store, Layers, Trophy, BookOpen } from "lucide-react";
+import { Plus, User, Menu, LogOut, Shield, ShoppingBag, UserCircle, LogIn, Store, Layers, Package, Puzzle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,8 +16,9 @@ import {
 const navItems = [
   { label: "Marketplace", href: "/marketplace", icon: Store },
   { label: "Coleções", href: "/colecoes", icon: Layers },
-  { label: "Torneios", href: "/torneios", icon: Trophy },
-  { label: "Conteúdo", href: "/conteudo", icon: BookOpen },
+  { label: "Produtos", href: "/produtos", icon: Package },
+  { label: "Acessórios", href: "/acessorios", icon: Puzzle },
+  { label: "Comunidade", href: "/comunidade", icon: Users },
 ];
 
 const Header = () => {
