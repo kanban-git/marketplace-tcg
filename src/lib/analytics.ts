@@ -11,6 +11,16 @@ function getSessionId(): string {
   return id;
 }
 
+/** Check if current URL has ?noTrack=1 */
+function isNoTrack(): boolean {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("noTrack") === "1";
+  } catch {
+    return false;
+  }
+}
+
 interface TrackPayload {
   entity_type?: string;
   entity_id?: string;
@@ -21,6 +31,8 @@ const recentEvents = new Map<string, number>();
 const DEBOUNCE_MS = 2000;
 
 export async function trackEvent(eventName: string, payload: TrackPayload = {}) {
+  if (isNoTrack()) return;
+
   try {
     const key = `${eventName}:${payload.entity_type || ""}:${payload.entity_id || ""}`;
     const now = Date.now();
