@@ -18,6 +18,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminLogs from "./pages/admin/AdminLogs";
 import NotFound from "./pages/NotFound";
+import Collections from "./pages/Collections";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/colecoes" element={<Collections />} />
             <Route path="/pokemon/cards/:cardId" element={<CardDetail />} />
             <Route path="/sets/:setId" element={<SetDetail />} />
             <Route path="/login" element={<Login />} />
