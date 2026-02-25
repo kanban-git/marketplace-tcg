@@ -44,6 +44,60 @@ export type Database = {
         }
         Relationships: []
       }
+      banners: {
+        Row: {
+          created_at: string
+          cta_text: string | null
+          cta_url: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          link_url: string | null
+          media_desktop_url: string
+          media_mobile_url: string | null
+          media_tablet_url: string | null
+          order: number
+          starts_at: string | null
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          media_desktop_url: string
+          media_mobile_url?: string | null
+          media_tablet_url?: string | null
+          order?: number
+          starts_at?: string | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          media_desktop_url?: string
+          media_mobile_url?: string | null
+          media_tablet_url?: string | null
+          order?: number
+          starts_at?: string | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           created_at: string
