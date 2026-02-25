@@ -6,7 +6,8 @@ import Footer from "@/components/Footer";
 import CardGrid from "@/components/CardGrid";
 import { ArrowLeft, Layers } from "lucide-react";
 import { type Card } from "@/hooks/useCards";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 function ensureHttps(url: string | null): string | null {
   if (!url) return null;
@@ -53,6 +54,10 @@ const SetLogo = ({ set }: { set: any }) => {
 const SetDetail = () => {
   const { setId } = useParams<{ setId: string }>();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (setId) trackEvent("view_collection", { entity_type: "collection", entity_id: setId });
+  }, [setId]);
 
   const { data: set } = useQuery({
     queryKey: ["set", setId],

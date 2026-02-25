@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { trackEvent } from "@/lib/analytics";
 
 interface Banner {
   id: string;
@@ -115,8 +116,12 @@ const BannerCarousel = () => {
   const hasCta = banner.cta_text && banner.cta_url;
   const isClickable = !hasCta && banner.link_url;
 
+  const handleBannerClick = () => {
+    trackEvent("click_banner", { entity_type: "banner", entity_id: banner.id });
+  };
+
   const Wrapper = isClickable ? "a" : "div";
-  const wrapperProps = isClickable ? { href: banner.link_url!, className: "block" } : {};
+  const wrapperProps = isClickable ? { href: banner.link_url!, className: "block", onClick: handleBannerClick } : {};
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border">
@@ -156,6 +161,7 @@ const BannerCarousel = () => {
                 {hasCta && (
                   <a
                     href={banner.cta_url!}
+                    onClick={handleBannerClick}
                     className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                   >
                     {banner.cta_text}
