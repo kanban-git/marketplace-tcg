@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCards } from "@/hooks/useCards";
+import { formatCardSubtitle, formatCollectorNumber } from "@/lib/cardUtils";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -101,7 +102,8 @@ const CreateListing = () => {
       image_small: card.image_small,
       image_ptbr: card.image_ptbr,
       set_name: card.set_name,
-      printed_total: null as number | null,
+      printed_total: card.printed_total ?? null,
+      collection_number: card.collection_number,
     }));
   }, [rawSearchResults]);
 
@@ -280,10 +282,7 @@ const CreateListing = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-foreground text-sm truncate">{card.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {card.number && card.printed_total
-                          ? `${card.number}/${card.printed_total}`
-                          : card.number || "—"}
-                        {card.set_name && ` · ${card.set_name}`}
+                        {formatCardSubtitle(card.number, card.printed_total, card.set_name)}
                       </p>
                       {card.rarity && (
                         <Badge variant="outline" className="mt-1 text-[10px]">{card.rarity}</Badge>
@@ -314,9 +313,7 @@ const CreateListing = () => {
                 <div className="flex-1">
                   <h2 className="font-display text-lg font-bold text-foreground">{cardWithStats.name}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {cardWithStats.number && cardWithStats.printed_total
-                      ? `${cardWithStats.number}/${cardWithStats.printed_total}`
-                      : cardWithStats.number || "—"}
+                    {formatCollectorNumber(cardWithStats.number, cardWithStats.printed_total)}
                   </p>
                   {cardWithStats.set_name && (
                     <Badge variant="outline" className="mt-1 text-[10px]">{cardWithStats.set_name}</Badge>

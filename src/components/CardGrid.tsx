@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { Card } from "@/hooks/useCards";
+import { formatCardSubtitle } from "@/lib/cardUtils";
 
 interface Props {
   cards: Card[];
@@ -54,7 +55,7 @@ const CardGrid = ({ cards, isLoading, compact }: Props) => {
               {card.name}
             </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {compact ? card.collection_number : `${card.set_name} · ${card.collection_number}`}
+              {compact ? card.collection_number : formatCardSubtitle(card.number, card.printed_total ?? null, card.set_name)}
             </p>
           </div>
         </button>
