@@ -24,6 +24,8 @@ import Collections from "./pages/Collections";
 import Marketplace from "./pages/Marketplace";
 import Community from "./pages/Community";
 import GuideDetail from "./pages/GuideDetail";
+import Products from "./pages/Products";
+import Accessories from "./pages/Accessories";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/colecoes" element={<Collections />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/produtos" element={<Products />} />
+            <Route path="/acessorios" element={<Accessories />} />
             <Route path="/comunidade" element={<Community />} />
             <Route path="/guia/:slug" element={<GuideDetail />} />
             <Route path="/pokemon/cards/:cardId" element={<CardDetail />} />
