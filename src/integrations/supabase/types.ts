@@ -245,6 +245,7 @@ export type Database = {
           fee_amount: number
           finish: string
           id: string
+          is_approved: boolean
           is_test: boolean
           language: string
           net_amount: number
@@ -272,6 +273,7 @@ export type Database = {
           fee_amount?: number
           finish?: string
           id?: string
+          is_approved?: boolean
           is_test?: boolean
           language?: string
           net_amount?: number
@@ -299,6 +301,7 @@ export type Database = {
           fee_amount?: number
           finish?: string
           id?: string
+          is_approved?: boolean
           is_test?: boolean
           language?: string
           net_amount?: number
@@ -613,6 +616,7 @@ export type Database = {
           fee_amount: number
           finish: string
           id: string
+          is_approved: boolean
           is_test: boolean
           language: string
           net_amount: number
@@ -664,6 +668,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recalculate_user_minimum_status: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
