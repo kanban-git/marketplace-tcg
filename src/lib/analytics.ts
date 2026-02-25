@@ -34,6 +34,14 @@ export async function trackEvent(eventName: string, payload: TrackPayload = {}) 
   if (isNoTrack()) return;
 
   try {
+    // Check if analytics is paused (dev mode)
+    const { data: setting } = await (supabase as any)
+      .from("app_settings")
+      .select("value")
+      .eq("key", "analytics_paused")
+      .maybeSingle();
+    if ((setting as any)?.value === true) return;
+
     const key = `${eventName}:${payload.entity_type || ""}:${payload.entity_id || ""}`;
     const now = Date.now();
     const last = recentEvents.get(key);

@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Eye, Search, ShoppingCart, Image, Download, ExternalLink, CalendarIcon, Copy } from "lucide-react";
+import { Eye, Search, ShoppingCart, Image, Download, ExternalLink, CalendarIcon, Copy, FlaskConical } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -307,8 +307,27 @@ const AdminAnalytics = () => {
     </Popover>
   );
 
+  // Dev mode check
+  const { data: analyticsPaused } = useQuery({
+    queryKey: ["app-settings-analytics-paused"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("app_settings")
+        .select("value")
+        .eq("key", "analytics_paused")
+        .maybeSingle();
+      return data?.value === true;
+    },
+  });
+
   return (
     <div className="space-y-6">
+      {analyticsPaused && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <FlaskConical className="h-4 w-4 text-amber-500" />
+          <p className="text-sm font-medium text-amber-500">Analytics pausado (Modo Dev ativo)</p>
+        </div>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Analytics</h1>
