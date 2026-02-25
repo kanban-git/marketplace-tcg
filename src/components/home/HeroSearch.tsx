@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
-import MiniChipsNav from "./MiniChipsNav";
 
 interface Props {
   onSearch: (query: string) => void;
@@ -10,10 +9,8 @@ interface Props {
 
 const HeroSearch = ({ onSearch }: Props) => (
   <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-    <div className="container mx-auto px-4 py-12 md:py-16">
-      <MiniChipsNav />
-
-      <h1 className="mt-6 text-center font-display text-3xl font-extrabold leading-tight md:text-4xl lg:text-5xl">
+    <div className="container mx-auto px-4 py-10 md:py-14">
+      <h1 className="text-center font-display text-3xl font-extrabold leading-tight md:text-4xl lg:text-5xl">
         O marketplace de{" "}
         <span className="text-gradient-gold">cartas Pokémon</span>
       </h1>
@@ -33,10 +30,10 @@ const HeroSearch = ({ onSearch }: Props) => (
           </Link>
         </Button>
         <Button variant="outline" size="lg" asChild>
-          <a href="#ofertas">Ver marketplace</a>
+          <Link to="/marketplace">Ver marketplace</Link>
         </Button>
         <Button variant="outline" size="lg" asChild>
-          <a href="#colecoes">Ver coleções</a>
+          <Link to="/colecoes">Ver coleções</Link>
         </Button>
       </div>
     </div>

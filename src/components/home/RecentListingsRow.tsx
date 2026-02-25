@@ -38,7 +38,7 @@ function useRecentListings(limit = 12) {
 }
 
 const RecentListingsRow = () => {
-  const { data: listings = [], isLoading } = useRecentListings(12);
+  const { data: listings = [], isLoading } = useRecentListings(6);
   const navigate = useNavigate();
 
   if (isLoading) {
