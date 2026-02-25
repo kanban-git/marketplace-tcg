@@ -77,6 +77,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           created_at: string
@@ -225,6 +243,7 @@ export type Database = {
           fee_amount: number
           finish: string
           id: string
+          is_test: boolean
           language: string
           net_amount: number
           notes: string | null
@@ -246,6 +265,7 @@ export type Database = {
           fee_amount?: number
           finish?: string
           id?: string
+          is_test?: boolean
           language?: string
           net_amount?: number
           notes?: string | null
@@ -267,6 +287,7 @@ export type Database = {
           fee_amount?: number
           finish?: string
           id?: string
+          is_test?: boolean
           language?: string
           net_amount?: number
           notes?: string | null
@@ -539,6 +560,7 @@ export type Database = {
           fee_amount: number
           finish: string
           id: string
+          is_test: boolean
           language: string
           net_amount: number
           notes: string | null

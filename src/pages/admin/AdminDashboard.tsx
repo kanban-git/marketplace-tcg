@@ -1,9 +1,39 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ShoppingBag, AlertTriangle, TrendingUp } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Users, ShoppingBag, AlertTriangle, TrendingUp, FlaskConical } from "lucide-react";
+import { toast } from "sonner";
 
 const AdminDashboard = () => {
+  const queryClient = useQueryClient();
+
+  // Dev mode setting
+  const { data: analyticsPaused = false } = useQuery({
+    queryKey: ["app-settings-analytics-paused"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("app_settings")
+        .select("value")
+        .eq("key", "analytics_paused")
+        .maybeSingle();
+      return (data as any)?.value === true;
+    },
+  });
+
+  const toggleDevMode = useMutation({
+    mutationFn: async (paused: boolean) => {
+      const { error } = await (supabase as any)
+        .from("app_settings")
+        .update({ value: paused, updated_at: new Date().toISOString() })
+        .eq("key", "analytics_paused");
+      if (error) throw error;
+    },
+    onSuccess: (_, paused) => {
+      queryClient.invalidateQueries({ queryKey: ["app-settings-analytics-paused"] });
+      toast.success(paused ? "Modo Dev ativado – analytics pausado" : "Modo Dev desativado – analytics ativo");
+    },
+  });
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
@@ -53,6 +83,22 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-bold text-foreground">Dashboard</h1>
+
+      {/* Dev Mode Toggle */}
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-3">
+          <FlaskConical className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Modo Dev: pausar analytics</p>
+            <p className="text-xs text-muted-foreground">Quando ativo, nenhum evento de analytics é salvo</p>
+          </div>
+        </div>
+        <Switch
+          checked={analyticsPaused}
+          onCheckedChange={(v) => toggleDevMode.mutate(v)}
+          disabled={toggleDevMode.isPending}
+        />
+      </div>
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
