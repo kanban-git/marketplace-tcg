@@ -234,6 +234,8 @@ export type Database = {
       }
       listings: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           card_id: string
           city: string | null
           condition: string
@@ -249,6 +251,9 @@ export type Database = {
           notes: string | null
           price_cents: number
           quantity: number
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           seller_id: string
           shipping_type: string
           state: string | null
@@ -256,6 +261,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           card_id: string
           city?: string | null
           condition?: string
@@ -271,6 +278,9 @@ export type Database = {
           notes?: string | null
           price_cents: number
           quantity?: number
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           seller_id: string
           shipping_type?: string
           state?: string | null
@@ -278,6 +288,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           card_id?: string
           city?: string | null
           condition?: string
@@ -293,6 +305,9 @@ export type Database = {
           notes?: string | null
           price_cents?: number
           quantity?: number
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           seller_id?: string
           shipping_type?: string
           state?: string | null
@@ -315,6 +330,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       product_items: {
         Row: {
@@ -551,6 +602,8 @@ export type Database = {
       admin_list_listings: {
         Args: never
         Returns: {
+          approved_at: string | null
+          approved_by: string | null
           card_id: string
           city: string | null
           condition: string
@@ -566,6 +619,9 @@ export type Database = {
           notes: string | null
           price_cents: number
           quantity: number
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           seller_id: string
           shipping_type: string
           state: string | null
