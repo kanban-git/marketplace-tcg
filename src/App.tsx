@@ -22,6 +22,8 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 import Collections from "./pages/Collections";
 import Marketplace from "./pages/Marketplace";
+import Community from "./pages/Community";
+import GuideDetail from "./pages/GuideDetail";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/colecoes" element={<Collections />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/comunidade" element={<Community />} />
+            <Route path="/guia/:slug" element={<GuideDetail />} />
             <Route path="/pokemon/cards/:cardId" element={<CardDetail />} />
             <Route path="/sets/:setId" element={<SetDetail />} />
             <Route path="/login" element={<Login />} />

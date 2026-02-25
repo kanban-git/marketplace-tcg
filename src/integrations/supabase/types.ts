@@ -181,6 +181,39 @@ export type Database = {
           },
         ]
       }
+      community_posts: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          id: string
+          slug: string
+          thumbnail: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          slug: string
+          thumbnail?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          slug?: string
+          thumbnail?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
           card_id: string
@@ -361,6 +394,48 @@ export type Database = {
           synced_sets?: number | null
           total_cards?: number | null
           total_sets?: number | null
+        }
+        Relationships: []
+      }
+      tournaments: {
+        Row: {
+          city: string | null
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          is_featured: boolean
+          name: string
+          state: string | null
+          type: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          is_featured?: boolean
+          name: string
+          state?: string | null
+          type?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          is_featured?: boolean
+          name?: string
+          state?: string | null
+          type?: string
+          updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }
