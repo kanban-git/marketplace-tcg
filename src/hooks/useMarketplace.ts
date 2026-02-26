@@ -166,19 +166,20 @@ export function useMarketplace(filters: MarketplaceFilters) {
         cards = cards.filter((c) => c.min_price_cents != null && c.min_price_cents <= maxCents);
       }
 
-      // 6) Sort by tab
+      // 6) Sort by tab (with tiebreakers)
+      const nameTie = (a: MarketCard, b: MarketCard) => a.name.localeCompare(b.name);
       switch (filters.tab) {
         case "popular":
-          cards.sort((a, b) => b.score_popular - a.score_popular);
+          cards.sort((a, b) => b.score_popular - a.score_popular || b.active_listings - a.active_listings || nameTie(a, b));
           break;
         case "most_listed":
-          cards.sort((a, b) => b.active_listings - a.active_listings);
+          cards.sort((a, b) => b.active_listings - a.active_listings || (a.min_price_cents ?? Infinity) - (b.min_price_cents ?? Infinity) || nameTie(a, b));
           break;
         case "lowest_price":
-          cards.sort((a, b) => (a.min_price_cents ?? Infinity) - (b.min_price_cents ?? Infinity));
+          cards.sort((a, b) => (a.min_price_cents ?? Infinity) - (b.min_price_cents ?? Infinity) || nameTie(a, b));
           break;
         case "highest_price":
-          cards.sort((a, b) => (b.min_price_cents ?? 0) - (a.min_price_cents ?? 0));
+          cards.sort((a, b) => (b.min_price_cents ?? 0) - (a.min_price_cents ?? 0) || nameTie(a, b));
           break;
       }
 
