@@ -602,6 +602,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_listing: {
+        Args: { p_admin_id: string; p_listing_id: string }
+        Returns: Json
+      }
       admin_list_listings: {
         Args: never
         Returns: {
@@ -660,6 +664,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_reject_listing: {
+        Args: { p_admin_id: string; p_listing_id: string; p_reason: string }
+        Returns: Json
       }
       check_email_exists: { Args: { _email: string }; Returns: boolean }
       has_role: {
