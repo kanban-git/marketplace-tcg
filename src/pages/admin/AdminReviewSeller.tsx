@@ -94,7 +94,7 @@ const AdminReviewSeller = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-review-seller", sellerId] });
-      qc.invalidateQueries({ queryKey: ["admin-review-queue"] });
+      qc.invalidateQueries({ queryKey: ["admin-listings"] });
       qc.invalidateQueries({ queryKey: ["admin-listings"] });
       toast.success("Anúncio aprovado!");
     },
@@ -120,7 +120,7 @@ const AdminReviewSeller = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-review-seller", sellerId] });
-      qc.invalidateQueries({ queryKey: ["admin-review-queue"] });
+      qc.invalidateQueries({ queryKey: ["admin-listings"] });
       qc.invalidateQueries({ queryKey: ["admin-listings"] });
       setRejectDialog(null);
       setRejectReason("");
@@ -131,7 +131,7 @@ const AdminReviewSeller = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/reviews/listings")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/listings")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

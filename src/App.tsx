@@ -16,7 +16,6 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminListings from "./pages/admin/AdminListings";
-import AdminReviewQueue from "./pages/admin/AdminReviewQueue";
 import AdminReviewSeller from "./pages/admin/AdminReviewSeller";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminBanners from "./pages/admin/AdminBanners";
@@ -72,8 +71,7 @@ const App = () => (
               <Route path="banners" element={<AdminBanners />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="listings" element={<AdminListings />} />
-              <Route path="reviews/listings" element={<AdminReviewQueue />} />
-              <Route path="reviews/listings/:sellerId" element={<AdminReviewSeller />} />
+              <Route path="listings/review/:sellerId" element={<AdminReviewSeller />} />
               <Route path="logs" element={<AdminLogs />} />
               <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
