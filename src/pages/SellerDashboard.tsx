@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,11 +7,16 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  ShoppingBag, Plus, TrendingUp, DollarSign, Star, Eye, Edit2, Power, PowerOff, Loader2, Info,
+  ShoppingBag, Plus, TrendingUp, DollarSign, Star, Eye, Clock, AlertTriangle,
+  Power, PowerOff, Loader2, Info, CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,7 +29,6 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
   pending_review: { label: "Em análise", variant: "secondary" },
   pending_minimum: { label: "Pendente (mínimo)", variant: "outline" },
   rejected: { label: "Reprovado", variant: "destructive" },
-  pending_activation: { label: "Pendente", variant: "secondary" },
   paused: { label: "Pausado", variant: "outline" },
   sold: { label: "Vendido", variant: "destructive" },
   cancelled: { label: "Cancelado", variant: "outline" },
@@ -31,12 +36,15 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
 
 const MIN_ACTIVATION_CENTS = 700;
 
+type SortOption = "newest" | "oldest" | "price_high" | "price_low";
+
 const SellerDashboard = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
-  // Fetch seller listings with card info
   const { data: listings, isLoading } = useQuery({
     queryKey: ["seller-listings", user?.id],
     queryFn: async () => {
@@ -52,21 +60,41 @@ const SellerDashboard = () => {
     enabled: !!user,
   });
 
-  const activeListings = (listings || []).filter((l: any) => l.status === "active");
-  const pendingListings = (listings || []).filter((l: any) => ["pending_review", "pending_minimum"].includes(l.status));
-  const pausedListings = (listings || []).filter((l: any) => l.status === "paused");
-  const soldListings = (listings || []).filter((l: any) => l.status === "sold");
+  // KPI calculations
+  const all = listings || [];
+  const activeValue = all.filter((l: any) => l.status === "active").reduce((s: number, l: any) => s + l.price_cents, 0);
+  const activeCount = all.filter((l: any) => l.status === "active").length;
+  const approvedValue = all.filter((l: any) => l.is_approved && ["active", "pending_minimum"].includes(l.status)).reduce((s: number, l: any) => s + l.price_cents, 0);
+  const approvedCount = all.filter((l: any) => l.is_approved && ["active", "pending_minimum"].includes(l.status)).length;
+  const reviewValue = all.filter((l: any) => l.status === "pending_review").reduce((s: number, l: any) => s + l.price_cents, 0);
+  const reviewCount = all.filter((l: any) => l.status === "pending_review").length;
+  const soldListings = all.filter((l: any) => l.status === "sold");
+  const totalSold = soldListings.reduce((s: number, l: any) => s + l.price_cents, 0);
+  const pausedListings = all.filter((l: any) => l.status === "paused");
 
-  const effectiveValue = (listings || [])
+  const effectiveValue = all
     .filter((l: any) => ["active", "pending_review"].includes(l.status))
     .reduce((s: number, l: any) => s + l.price_cents, 0);
-  const totalSold = soldListings.reduce((s: number, l: any) => s + l.price_cents, 0);
-  const totalReceived = soldListings.reduce((s: number, l: any) => s + l.net_amount, 0);
+  const pendingListings = all.filter((l: any) => ["pending_review", "pending_minimum"].includes(l.status));
+
+  // Filter & sort
+  const filtered = all.filter((l: any) => {
+    if (statusFilter === "all") return l.status !== "sold";
+    return l.status === statusFilter;
+  });
+
+  const sorted = [...filtered].sort((a: any, b: any) => {
+    switch (sortBy) {
+      case "oldest": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case "price_high": return b.price_cents - a.price_cents;
+      case "price_low": return a.price_cents - b.price_cents;
+      default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+  });
 
   const toggleStatus = useMutation({
     mutationFn: async ({ id, currentListing }: { id: string; currentListing: any }) => {
       if (currentListing.status === "active") {
-        // Pause: active -> paused
         const { error } = await supabase
           .from("listings")
           .update({ status: "paused" } as any)
@@ -74,7 +102,6 @@ const SellerDashboard = () => {
           .eq("seller_id", user!.id);
         if (error) throw error;
       } else if (currentListing.status === "paused") {
-        // Reactivate: paused -> pending_review (if not approved) or active (if approved)
         const newStatus = currentListing.is_approved ? "active" : "pending_review";
         const { error } = await supabase
           .from("listings")
@@ -83,12 +110,10 @@ const SellerDashboard = () => {
           .eq("seller_id", user!.id);
         if (error) throw error;
       }
-      // Recalculate minimum status for all user listings
       await supabase.rpc("recalculate_user_minimum_status", { p_user_id: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seller-listings"] });
-      queryClient.invalidateQueries({ queryKey: ["seller-effective-value"] });
       toast.success("Status atualizado!");
     },
   });
@@ -122,22 +147,47 @@ const SellerDashboard = () => {
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "Anúncios ativos", value: activeListings.length, icon: ShoppingBag, color: "text-primary" },
-            { label: "Valor efetivo", value: formatPrice(effectiveValue), icon: TrendingUp, color: "text-primary" },
-            { label: "Total vendido", value: formatPrice(totalSold), icon: DollarSign, color: "text-green-500" },
-            { label: "Reputação", value: profile?.reputation_score ?? 0, icon: Star, color: "text-accent" },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                <span className="text-xs">{stat.label}</span>
-              </div>
-              <p className="font-display text-xl font-bold text-foreground">{stat.value}</p>
+        {/* KPIs */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <ShoppingBag className="h-4 w-4 text-primary" />
+              <span className="text-xs">Valor ativo</span>
             </div>
-          ))}
+            <p className="font-display text-xl font-bold text-foreground">{formatPrice(activeValue)}</p>
+            <p className="text-[10px] text-muted-foreground">{activeCount} anúncio{activeCount !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <CheckCircle className="h-4 w-4 text-primary" />
+              <span className="text-xs">Valor aprovado</span>
+            </div>
+            <p className="font-display text-xl font-bold text-foreground">{formatPrice(approvedValue)}</p>
+            <p className="text-[10px] text-muted-foreground">{approvedCount} anúncio{approvedCount !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Clock className="h-4 w-4 text-accent" />
+              <span className="text-xs">Em análise</span>
+            </div>
+            <p className="font-display text-xl font-bold text-foreground">{formatPrice(reviewValue)}</p>
+            <p className="text-[10px] text-muted-foreground">{reviewCount} anúncio{reviewCount !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-xs">Total vendido</span>
+            </div>
+            <p className="font-display text-xl font-bold text-foreground">{formatPrice(totalSold)}</p>
+            <p className="text-[10px] text-muted-foreground">{soldListings.length} venda{soldListings.length !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Star className="h-4 w-4 text-accent" />
+              <span className="text-xs">Reputação</span>
+            </div>
+            <p className="font-display text-xl font-bold text-foreground">{profile?.reputation_score ?? 0}</p>
+          </div>
         </div>
 
         {/* Activation warning */}
@@ -158,98 +208,132 @@ const SellerDashboard = () => {
           </div>
         )}
 
-        {/* Listings table */}
+        {/* Listings with filters */}
         <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-sm font-semibold text-foreground">Meus Anúncios</h2>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Mais recentes</SelectItem>
+                <SelectItem value="oldest">Mais antigos</SelectItem>
+                <SelectItem value="price_high">Maior preço</SelectItem>
+                <SelectItem value="price_low">Menor preço</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
+            <div className="border-b border-border px-4 overflow-x-auto">
+              <TabsList className="bg-transparent h-9 p-0 gap-0">
+                {[
+                  { value: "all", label: "Todos" },
+                  { value: "active", label: "Ativos" },
+                  { value: "pending_review", label: "Em análise" },
+                  { value: "pending_minimum", label: "Pendente (mínimo)" },
+                  { value: "paused", label: "Pausados" },
+                  { value: "rejected", label: "Reprovados" },
+                ].map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs px-3"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
             </div>
-          ) : !listings || listings.length === 0 ? (
-            <div className="py-12 text-center">
-              <ShoppingBag className="mx-auto h-10 w-10 text-muted-foreground" />
-              <p className="mt-3 text-muted-foreground">Nenhum anúncio criado ainda.</p>
-              <Button className="mt-4" onClick={() => navigate("/anunciar")}>
-                <Plus className="mr-1 h-4 w-4" /> Criar primeiro anúncio
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Carta</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Taxa</TableHead>
-                    <TableHead>Líquido</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {listings.map((listing: any) => {
-                    const card = listing.cards;
-                    const setData = Array.isArray(card?.sets) ? card.sets[0] : card?.sets;
-                    const st = statusLabels[listing.status] || { label: listing.status, variant: "outline" as const };
-                    return (
-                      <TableRow key={listing.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={card?.image_ptbr || card?.image_small || "/placeholder.svg"}
-                              alt={card?.name}
-                              className="h-10 w-8 rounded object-contain bg-secondary"
-                            />
-                            <div>
-                              <p className="text-sm font-medium text-foreground truncate max-w-[140px]">{card?.name ?? "—"}</p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {card?.number}{setData?.name ? ` · ${setData.name}` : ""}
-                              </p>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : sorted.length === 0 ? (
+              <div className="py-12 text-center">
+                <ShoppingBag className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="mt-3 text-muted-foreground">
+                  {statusFilter === "all" ? "Nenhum anúncio criado ainda." : "Nenhum anúncio neste status."}
+                </p>
+                {statusFilter === "all" && (
+                  <Button className="mt-4" onClick={() => navigate("/anunciar")}>
+                    <Plus className="mr-1 h-4 w-4" /> Criar primeiro anúncio
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Carta</TableHead>
+                      <TableHead>Preço</TableHead>
+                      <TableHead>Taxa</TableHead>
+                      <TableHead>Líquido</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sorted.map((listing: any) => {
+                      const card = listing.cards;
+                      const setData = Array.isArray(card?.sets) ? card.sets[0] : card?.sets;
+                      const st = statusLabels[listing.status] || { label: listing.status, variant: "outline" as const };
+                      return (
+                        <TableRow key={listing.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={card?.image_ptbr || card?.image_small || "/placeholder.svg"}
+                                alt={card?.name}
+                                className="h-10 w-8 rounded object-contain bg-secondary"
+                              />
+                              <div>
+                                <p className="text-sm font-medium text-foreground truncate max-w-[140px]">{card?.name ?? "—"}</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {card?.number}{setData?.name ? ` · ${setData.name}` : ""}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm font-medium">{formatPrice(listing.price_cents)}</TableCell>
-                        <TableCell className="text-sm text-destructive">{formatPrice(listing.fee_amount)}</TableCell>
-                        <TableCell className="text-sm text-primary font-medium">{formatPrice(listing.net_amount)}</TableCell>
-                        <TableCell>
-                          <Badge variant={st.variant} className="text-[10px]">{st.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {listing.status === "active" && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
-                                title="Pausar"
-                              >
-                                <PowerOff className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            {listing.status === "paused" && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
-                                title="Reativar"
-                              >
-                                <Power className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                          </TableCell>
+                          <TableCell className="text-sm font-medium">{formatPrice(listing.price_cents)}</TableCell>
+                          <TableCell className="text-sm text-destructive">{formatPrice(listing.fee_amount)}</TableCell>
+                          <TableCell className="text-sm text-primary font-medium">{formatPrice(listing.net_amount)}</TableCell>
+                          <TableCell>
+                            <Badge variant={st.variant} className="text-[10px]">{st.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {listing.status === "active" && (
+                                <Button
+                                  variant="ghost" size="icon" className="h-7 w-7"
+                                  onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
+                                  title="Pausar"
+                                >
+                                  <PowerOff className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {listing.status === "paused" && (
+                                <Button
+                                  variant="ghost" size="icon" className="h-7 w-7"
+                                  onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
+                                  title="Reativar"
+                                >
+                                  <Power className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Tabs>
         </div>
 
         {/* Sales History */}
