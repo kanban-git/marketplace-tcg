@@ -83,9 +83,14 @@ const AdminDashboard = () => {
     {
       title: "Anúncios Ativos",
       value: stats?.activeListings ?? 0,
-      subtitle: `${stats?.totalListings ?? 0} total`,
       icon: ShoppingBag,
       color: "text-emerald-400",
+    },
+    {
+      title: "Total de Anúncios",
+      value: stats?.totalListings ?? 0,
+      icon: ShoppingBag,
+      color: "text-muted-foreground",
     },
     {
       title: "Em Aprovação",
