@@ -145,12 +145,10 @@ const CreateListing = () => {
         .from("listings")
         .select("price_cents, status")
         .eq("seller_id", user.id)
-        .in("status", ["active", "pending_review", "paused"]);
+        .in("status", ["active", "pending_review"]);
       const effectiveValue = (data || [])
-        .filter((l: any) => l.status === "active" || l.status === "pending_review")
         .reduce((sum: number, l: any) => sum + l.price_cents, 0);
-      const hasPaused = (data || []).some((l: any) => l.status === "paused");
-      return { effectiveValue, hasPaused };
+      return { effectiveValue, hasPaused: false };
     },
     enabled: !!user,
   });
@@ -465,7 +463,7 @@ const CreateListing = () => {
                       <>
                         <p className="font-medium text-foreground">Ativação mínima: {formatPrice(MIN_ACTIVATION_CENTS)}</p>
                         <p>Faltam {formatPrice(MIN_ACTIVATION_CENTS - totalAfter)} para seus anúncios serem exibidos no marketplace. Cadastre novos anúncios para atingir o mínimo.</p>
-                        {hasPausedListings && (
+                        {false && (
                           <p className="mt-1">Ou ative anúncios pausados para somar ao valor total.</p>
                         )}
                       </>

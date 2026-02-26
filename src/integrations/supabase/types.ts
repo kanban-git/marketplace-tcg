@@ -670,6 +670,23 @@ export type Database = {
         Returns: Json
       }
       check_email_exists: { Args: { _email: string }; Returns: boolean }
+      delete_listing: {
+        Args: { p_listing_id: string; p_user_id: string }
+        Returns: Json
+      }
+      edit_listing: {
+        Args: {
+          p_condition: string
+          p_finish: string
+          p_language: string
+          p_listing_id: string
+          p_notes: string
+          p_price_cents: number
+          p_quantity: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -684,10 +701,6 @@ export type Database = {
       recalculate_user_minimum_status: {
         Args: { p_user_id: string }
         Returns: undefined
-      }
-      toggle_listing_status: {
-        Args: { p_action: string; p_listing_id: string; p_user_id: string }
-        Returns: Json
       }
     }
     Enums: {
