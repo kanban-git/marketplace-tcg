@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Users, ShoppingBag, AlertTriangle, TrendingUp, FlaskConical } from "lucide-react";
+import { Users, ShoppingBag, AlertTriangle, TrendingUp, FlaskConical, XCircle, Clock, MousePointerClick } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminDashboard = () => {
@@ -34,25 +34,40 @@ const AdminDashboard = () => {
       toast.success(paused ? "Modo Dev ativado – analytics pausado" : "Modo Dev desativado – analytics ativo");
     },
   });
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [profilesRes, listingsRes, syncRes] = await Promise.all([
+      const [profilesRes, listingsRes, syncRes, analyticsRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("listings").select("id, price_cents, status"),
         supabase.from("sync_status").select("*").order("created_at", { ascending: false }).limit(1),
+        (supabase as any)
+          .from("analytics_events")
+          .select("id", { count: "exact", head: true })
+          .eq("event_name", "listing_buy_click"),
       ]);
 
       const listings = listingsRes.data ?? [];
       const activeListings = listings.filter((l) => l.status === "active");
+      const pendingListings = listings.filter((l) => l.status === "pending_review");
+      const rejectedListings = listings.filter((l) => l.status === "rejected");
       const totalRevenue = activeListings.reduce((sum, l) => sum + l.price_cents, 0);
       const syncError = syncRes.data?.[0]?.status === "error" ? syncRes.data[0].error_message : null;
+
+      const buyClicks = analyticsRes.count ?? 0;
+      const avgClicksPerListing = activeListings.length > 0
+        ? (buyClicks / activeListings.length).toFixed(1)
+        : "0";
 
       return {
         totalUsers: profilesRes.count ?? 0,
         totalListings: listings.length,
         activeListings: activeListings.length,
+        pendingListings: pendingListings.length,
+        rejectedListings: rejectedListings.length,
         estimatedRevenue: totalRevenue,
+        avgBuyClicks: avgClicksPerListing,
         syncError,
       };
     },
@@ -73,10 +88,29 @@ const AdminDashboard = () => {
       color: "text-emerald-400",
     },
     {
-      title: "Receita Estimada (5%)",
-      value: `R$ ${(((stats?.estimatedRevenue ?? 0) * 0.05) / 100).toFixed(2)}`,
+      title: "Em Aprovação",
+      value: stats?.pendingListings ?? 0,
+      icon: Clock,
+      color: "text-yellow-400",
+    },
+    {
+      title: "Reprovados",
+      value: stats?.rejectedListings ?? 0,
+      icon: XCircle,
+      color: "text-destructive",
+    },
+    {
+      title: "Receita Estimada (10%)",
+      value: `R$ ${(((stats?.estimatedRevenue ?? 0) * 0.10) / 100).toFixed(2)}`,
       icon: TrendingUp,
       color: "text-primary",
+    },
+    {
+      title: "Cliques médios em Comprar",
+      value: stats?.avgBuyClicks ?? "0",
+      subtitle: "por anúncio ativo",
+      icon: MousePointerClick,
+      color: "text-purple-400",
     },
   ];
 
@@ -102,7 +136,7 @@ const AdminDashboard = () => {
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="animate-pulse bg-card">
               <CardContent className="h-24" />
             </Card>
