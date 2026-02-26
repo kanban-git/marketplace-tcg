@@ -12,6 +12,10 @@ interface Profile {
   state: string | null;
   status: string;
   reputation_score: number | null;
+  account_type: "individual" | "business";
+  full_name: string | null;
+  document: string | null;
+  phone: string | null;
 }
 
 interface AuthContextType {

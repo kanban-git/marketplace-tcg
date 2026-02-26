@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const FEE_RATE = 0.10;
+import { calculateSellerFee, getSellerFeeLabel, type AccountType } from "@/lib/feeUtils";
 const MIN_ACTIVATION_CENTS = 700; // 7 BRL
 
 function formatPrice(cents: number) {
@@ -63,7 +63,8 @@ interface SelectedCard {
 
 const CreateListing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const accountType: AccountType = (profile as any)?.account_type ?? "individual";
   const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
 
@@ -131,8 +132,7 @@ const CreateListing = () => {
   }, [selectedCard, marketStats]);
 
   const priceCents = Math.round(parseFloat(priceBrl || "0") * 100);
-  const feeCents = Math.round(priceCents * FEE_RATE);
-  const netCents = priceCents - feeCents;
+  const { feeCents, netCents } = calculateSellerFee(priceCents, accountType);
 
   // Check current effective value (active + pending_review) for activation rule
   const { data: sellerStats } = useQuery({
@@ -217,7 +217,7 @@ const CreateListing = () => {
           ? "Seu anúncio será revisado por um administrador antes de ser publicado."
           : `Pendente: faltam ${formatPrice(MIN_ACTIVATION_CENTS - totalAfter)} para atingir o mínimo de R$ 7,00.`,
       });
-      navigate("/perfil");
+      navigate("/meus-anuncios");
     },
     onError: (err: any) => {
       toast.error("Erro ao criar anúncio", { description: err.message });
@@ -440,7 +440,7 @@ const CreateListing = () => {
               {priceCents > 0 && (
                 <div className="rounded-lg bg-secondary/50 p-3 space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taxa (10%)</span>
+                    <span className="text-muted-foreground">Taxa do vendedor ({getSellerFeeLabel(accountType)})</span>
                     <span className="text-destructive font-medium">-{formatPrice(feeCents)}</span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-1">

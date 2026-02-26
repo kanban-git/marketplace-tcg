@@ -29,6 +29,7 @@ import Products from "./pages/Products";
 import Accessories from "./pages/Accessories";
 import CreateListing from "./pages/CreateListing";
 import SellerDashboard from "./pages/SellerDashboard";
+import MyProfile from "./pages/MyProfile";
 import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
@@ -51,7 +52,9 @@ const App = () => (
             <Route path="/pokemon/cards/:cardId" element={<CardDetail />} />
             <Route path="/sets/:setId" element={<SetDetail />} />
             <Route path="/anunciar" element={<CreateListing />} />
-            <Route path="/perfil" element={<SellerDashboard />} />
+            <Route path="/meus-anuncios" element={<SellerDashboard />} />
+            <Route path="/meu-perfil" element={<MyProfile />} />
+            <Route path="/perfil" element={<MyProfile />} />
             <Route path="/notificacoes" element={<Notifications />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />

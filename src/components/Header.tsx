@@ -103,11 +103,11 @@ const Header = () => {
                     <p className="text-sm font-medium text-foreground">{profile?.display_name ?? "Usuário"}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
+                  <DropdownMenuItem onClick={() => navigate("/meu-perfil")}>
                     <UserCircle className="mr-2 h-4 w-4" />
                     Meu perfil
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
+                  <DropdownMenuItem onClick={() => navigate("/meus-anuncios")}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
                     Meus anúncios
                   </DropdownMenuItem>
