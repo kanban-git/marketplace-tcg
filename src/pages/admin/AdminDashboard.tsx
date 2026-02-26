@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Users, ShoppingBag, AlertTriangle, TrendingUp, FlaskConical, XCircle, Clock, MousePointerClick } from "lucide-react";
+import { Users, ShoppingBag, AlertTriangle, TrendingUp, FlaskConical, XCircle, Clock, MousePointerClick, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminDashboard = () => {
@@ -40,7 +40,7 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const [profilesRes, listingsRes, syncRes, analyticsRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("listings").select("id, price_cents, status"),
+        supabase.from("listings").select("id, price_cents, status, seller_id"),
         supabase.from("sync_status").select("*").order("created_at", { ascending: false }).limit(1),
         (supabase as any)
           .from("analytics_events")
@@ -53,6 +53,7 @@ const AdminDashboard = () => {
       const pendingListings = listings.filter((l) => l.status === "pending_review");
       const rejectedListings = listings.filter((l) => l.status === "rejected");
       const totalRevenue = activeListings.reduce((sum, l) => sum + l.price_cents, 0);
+      const sellersWithListings = new Set(listings.map((l: any) => l.seller_id)).size;
       const syncError = syncRes.data?.[0]?.status === "error" ? syncRes.data[0].error_message : null;
 
       const buyClicks = analyticsRes.count ?? 0;
@@ -68,6 +69,7 @@ const AdminDashboard = () => {
         rejectedListings: rejectedListings.length,
         estimatedRevenue: totalRevenue,
         avgBuyClicks: avgClicksPerListing,
+        sellersWithListings,
         syncError,
       };
     },
@@ -79,6 +81,12 @@ const AdminDashboard = () => {
       value: stats?.totalUsers ?? 0,
       icon: Users,
       color: "text-blue-400",
+    },
+    {
+      title: "Usuários com Anúncios",
+      value: stats?.sellersWithListings ?? 0,
+      icon: UserCheck,
+      color: "text-cyan-400",
     },
     {
       title: "Anúncios Ativos",
