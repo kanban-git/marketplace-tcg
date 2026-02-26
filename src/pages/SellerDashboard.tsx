@@ -98,13 +98,15 @@ const SellerDashboard = () => {
   const toggleStatus = useMutation({
     mutationFn: async ({ id, currentListing }: { id: string; currentListing: any }) => {
       if (currentListing.status === "active") {
+        // Manual pause: active -> paused
         const { error } = await supabase
           .from("listings")
           .update({ status: "paused" } as any)
           .eq("id", id)
           .eq("seller_id", user!.id);
         if (error) throw error;
-      } else if (currentListing.status === "paused") {
+      } else if (currentListing.status === "paused" || currentListing.status === "paused_minimum") {
+        // Reactivate: paused/paused_minimum -> active (if approved) or pending_review
         const newStatus = currentListing.is_approved ? "active" : "pending_review";
         const { error } = await supabase
           .from("listings")
@@ -113,11 +115,16 @@ const SellerDashboard = () => {
           .eq("seller_id", user!.id);
         if (error) throw error;
       }
-      await supabase.rpc("recalculate_user_minimum_status", { p_user_id: user!.id });
+      // Recalculate: enforces paused_minimum if total < R$7
+      const { error: rpcError } = await supabase.rpc("recalculate_user_minimum_status", { p_user_id: user!.id });
+      if (rpcError) throw rpcError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seller-listings"] });
       toast.success("Status atualizado!");
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao atualizar status: " + (err?.message || "tente novamente"));
     },
   });
 
@@ -334,7 +341,7 @@ const SellerDashboard = () => {
                                   <PowerOff className="h-3.5 w-3.5" />
                                 </Button>
                               )}
-                              {listing.status === "paused" && (
+                              {(listing.status === "paused" || listing.status === "paused_minimum") && (
                                 <Button
                                   variant="ghost" size="icon" className="h-7 w-7"
                                   onClick={() => toggleStatus.mutate({ id: listing.id, currentListing: listing })}
