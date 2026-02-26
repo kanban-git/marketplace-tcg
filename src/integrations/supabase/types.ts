@@ -677,9 +677,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalculate_minimum_visibility: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       recalculate_user_minimum_status: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      toggle_listing_status: {
+        Args: { p_action: string; p_listing_id: string; p_user_id: string }
+        Returns: Json
       }
     }
     Enums: {
