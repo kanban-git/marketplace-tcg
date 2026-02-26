@@ -42,13 +42,24 @@ export function useMarketplace(filters: MarketplaceFilters) {
       const client = supabase as any;
 
       // 1) Get market stats for all cards with active listings
-      const { data: statsRaw, error: statsErr } = await client
-        .from("card_market_stats")
-        .select("card_id, offers_count, min_price_cents");
-      if (statsErr) throw statsErr;
+      // Fetch ALL market stats (paginate to bypass 1000-row PostgREST limit)
+      let allStats: any[] = [];
+      let statsPage = 0;
+      const statsPageSize = 1000;
+      while (true) {
+        const { data: batch, error: statsErr } = await client
+          .from("card_market_stats")
+          .select("card_id, offers_count, min_price_cents")
+          .range(statsPage * statsPageSize, (statsPage + 1) * statsPageSize - 1);
+        if (statsErr) throw statsErr;
+        if (!batch || batch.length === 0) break;
+        allStats = allStats.concat(batch);
+        if (batch.length < statsPageSize) break;
+        statsPage++;
+      }
 
       const statsMap = new Map<string, { offers: number; minPrice: number | null }>();
-      for (const s of statsRaw || []) {
+      for (const s of allStats) {
         statsMap.set(s.card_id, { offers: s.offers_count || 0, minPrice: s.min_price_cents });
       }
 
