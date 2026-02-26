@@ -51,7 +51,7 @@ const ScrollableTabs = ({ tab, setTab, setPage }: { tab: MarketTab; setTab: (t: 
       {showLeft && (
         <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-background to-transparent" />
       )}
-      <div ref={ref} className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
+      <div ref={ref} className="flex gap-1 overflow-x-auto scrollbar-styled pb-1">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -172,7 +172,7 @@ const Marketplace = () => {
       {/* Rarity */}
       <div>
         <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Raridade</h4>
-        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto scrollbar-none">
+        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto scrollbar-styled">
           {rarities.map((r) => (
             <button
               key={r}
@@ -192,7 +192,7 @@ const Marketplace = () => {
       {/* Collection */}
       <div>
         <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Coleção</h4>
-        <div className="max-h-48 space-y-1 overflow-y-auto scrollbar-none pr-1">
+        <div className="max-h-48 space-y-1 overflow-y-auto scrollbar-styled pr-1">
           {sets.map((s: any) => (
             <label key={s.id} className="flex items-center gap-2 cursor-pointer py-0.5">
               <Checkbox

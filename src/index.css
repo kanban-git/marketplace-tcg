@@ -86,12 +86,37 @@
     box-shadow: var(--shadow-glow);
   }
 
-  /* Hide native scrollbars while keeping scroll functional */
+  /* Hide native scrollbars (use only where needed) */
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Styled thin scrollbar matching the theme */
+  .scrollbar-styled {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-styled::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-styled::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+  }
+  .scrollbar-styled::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    transition: background 0.2s;
+  }
+  .scrollbar-styled::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+  .scrollbar-styled::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
