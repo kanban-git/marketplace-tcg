@@ -67,57 +67,28 @@ const AdminListings = () => {
     },
   });
 
-  // Calculate seller effective totals (active + pending_review)
-  const sellerTotals = listings.reduce((acc: Record<string, number>, l: any) => {
-    if (["active", "pending_review"].includes(l.status)) {
-      acc[l.seller_id] = (acc[l.seller_id] || 0) + l.price_cents;
-    }
-    return acc;
-  }, {});
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, sellerId, cardName }: { id: string; sellerId: string; cardName: string }) => {
-      const sellerTotal = sellerTotals[sellerId] || 0;
-      const meetsMinimum = sellerTotal >= 700;
-      const newStatus = meetsMinimum ? "active" : "pending_minimum";
+      const { data: result, error } = await supabase.rpc("admin_approve_listing", {
+        p_listing_id: id,
+        p_admin_id: currentUser!.id,
+      } as any);
+      if (error) throw error;
 
-      await supabase.from("listings").update({
-        status: newStatus,
-        is_approved: true,
-        approved_at: new Date().toISOString(),
-        approved_by: currentUser!.id,
-      } as any).eq("id", id);
+      const newStatus = (result as any)?.status;
+      const meetsMinimum = newStatus === "active";
 
-      await supabase.from("admin_actions").insert({
-        admin_id: currentUser!.id,
-        action: "approve_listing",
+      await createNotification({
+        user_id: sellerId,
+        title: meetsMinimum ? "Anúncio aprovado!" : "Anúncio aprovado (pendente mínimo)",
+        message: meetsMinimum
+          ? `Seu anúncio de "${cardName}" foi aprovado e está publicado no marketplace.`
+          : `Seu anúncio de "${cardName}" foi aprovado, mas aguarda o valor mínimo de R$ 7,00 para aparecer no marketplace.`,
+        type: "listing_approved",
         entity_type: "listing",
         entity_id: id,
       });
-
-      // Recalculate all seller listings
-      await supabase.rpc("recalculate_user_minimum_status", { p_user_id: sellerId });
-
-      if (meetsMinimum) {
-
-        await createNotification({
-          user_id: sellerId,
-          title: "Anúncio aprovado!",
-          message: `Seu anúncio de "${cardName}" foi aprovado e está ativo no marketplace.`,
-          type: "listing_approved",
-          entity_type: "listing",
-          entity_id: id,
-        });
-      } else {
-        await createNotification({
-          user_id: sellerId,
-          title: "Anúncio aprovado (pendente mínimo)",
-          message: `Seu anúncio de "${cardName}" foi aprovado, mas será ativado quando seus anúncios atingirem R$ 7,00.`,
-          type: "listing_approved",
-          entity_type: "listing",
-          entity_id: id,
-        });
-      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-listings"] });
@@ -127,20 +98,12 @@ const AdminListings = () => {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ id, sellerId, cardName, reason }: { id: string; sellerId: string; cardName: string; reason: string }) => {
-      await supabase.from("listings").update({
-        status: "rejected",
-        rejected_at: new Date().toISOString(),
-        rejected_by: currentUser!.id,
-        rejection_reason: reason,
-      } as any).eq("id", id);
-
-      await supabase.from("admin_actions").insert({
-        admin_id: currentUser!.id,
-        action: "reject_listing",
-        entity_type: "listing",
-        entity_id: id,
-        metadata: { reason },
-      });
+      const { error } = await supabase.rpc("admin_reject_listing", {
+        p_listing_id: id,
+        p_admin_id: currentUser!.id,
+        p_reason: reason,
+      } as any);
+      if (error) throw error;
 
       await createNotification({
         user_id: sellerId,

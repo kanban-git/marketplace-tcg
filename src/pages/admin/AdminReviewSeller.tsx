@@ -72,25 +72,14 @@ const AdminReviewSeller = () => {
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, cardName }: { id: string; cardName: string }) => {
-      const meetsMinimum = effectiveValue >= 700;
-      const newStatus = meetsMinimum ? "active" : "pending_minimum";
-
-      const { error } = await supabase.from("listings").update({
-        status: newStatus,
-        is_approved: true,
-        approved_at: new Date().toISOString(),
-        approved_by: adminUser!.id,
-      } as any).eq("id", id);
+      const { data: result, error } = await supabase.rpc("admin_approve_listing", {
+        p_listing_id: id,
+        p_admin_id: adminUser!.id,
+      } as any);
       if (error) throw error;
 
-      await supabase.from("admin_actions").insert({
-        admin_id: adminUser!.id,
-        action: "approve_listing",
-        entity_type: "listing",
-        entity_id: id,
-      });
-
-      await supabase.rpc("recalculate_user_minimum_status", { p_user_id: sellerId! });
+      const newStatus = (result as any)?.status;
+      const meetsMinimum = newStatus === "active";
 
       await createNotification({
         user_id: sellerId!,
@@ -113,22 +102,12 @@ const AdminReviewSeller = () => {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ id, cardName, reason }: { id: string; cardName: string; reason: string }) => {
-      const { error } = await supabase.from("listings").update({
-        status: "rejected",
-        is_approved: false,
-        rejected_at: new Date().toISOString(),
-        rejected_by: adminUser!.id,
-        rejection_reason: reason,
-      } as any).eq("id", id);
+      const { error } = await supabase.rpc("admin_reject_listing", {
+        p_listing_id: id,
+        p_admin_id: adminUser!.id,
+        p_reason: reason,
+      } as any);
       if (error) throw error;
-
-      await supabase.from("admin_actions").insert({
-        admin_id: adminUser!.id,
-        action: "reject_listing",
-        entity_type: "listing",
-        entity_id: id,
-        metadata: { reason },
-      });
 
       await createNotification({
         user_id: sellerId!,
