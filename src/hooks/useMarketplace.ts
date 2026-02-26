@@ -85,47 +85,55 @@ export function useMarketplace(filters: MarketplaceFilters) {
         clicksCount.set(c.entity_id, (clicksCount.get(c.entity_id) || 0) + 1);
       }
 
-      // 3) Get cards with sets
-      let query = client
-        .from("cards")
-        .select("id, name, number, rarity, supertype, types, image_small, image_ptbr, set_id, sets(name, printed_total, total)")
-        .order("name")
-        .limit(1000);
+      // 3) Get cards with sets (paginate to bypass 1000-row limit)
+      const buildBaseQuery = () => {
+        let q = client
+          .from("cards")
+          .select("id, name, number, rarity, supertype, types, image_small, image_ptbr, set_id, sets(name, printed_total, total)")
+          .order("name");
 
-      if (filters.search) {
-        const parsed = parseCardSearch(filters.search);
-        switch (parsed.kind) {
-          case "exact_number":
-            query = query.eq("number", parsed.number);
-            break;
-          case "prefix_number":
-            query = query.eq("number", parsed.number);
-            break;
-          case "plain_number":
-            query = query.eq("number", parsed.number);
-            break;
-          case "text":
-            if (parsed.query) {
-              query = query.or(`name.ilike.%${parsed.query}%`);
-            }
-            break;
+        if (filters.search) {
+          const parsed = parseCardSearch(filters.search);
+          switch (parsed.kind) {
+            case "exact_number":
+            case "prefix_number":
+            case "plain_number":
+              q = q.eq("number", parsed.number);
+              break;
+            case "text":
+              if (parsed.query) {
+                q = q.or(`name.ilike.%${parsed.query}%`);
+              }
+              break;
+          }
         }
-      }
-      if (filters.sets.length > 0) {
-        query = query.in("set_id", filters.sets);
-      }
-      if (filters.rarities.length > 0) {
-        query = query.in("rarity", filters.rarities);
-      }
-      if (filters.supertypes.length > 0) {
-        query = query.in("supertype", filters.supertypes);
-      }
+        if (filters.sets.length > 0) {
+          q = q.in("set_id", filters.sets);
+        }
+        if (filters.rarities.length > 0) {
+          q = q.in("rarity", filters.rarities);
+        }
+        if (filters.supertypes.length > 0) {
+          q = q.in("supertype", filters.supertypes);
+        }
+        return q;
+      };
 
-      const { data: cardsRaw, error: cardsErr } = await query;
-      if (cardsErr) throw cardsErr;
+      let allCards: any[] = [];
+      let cardsPage = 0;
+      const cardsPageSize = 1000;
+      while (true) {
+        const { data: batch, error: cardsErr } = await buildBaseQuery()
+          .range(cardsPage * cardsPageSize, (cardsPage + 1) * cardsPageSize - 1);
+        if (cardsErr) throw cardsErr;
+        if (!batch || batch.length === 0) break;
+        allCards = allCards.concat(batch);
+        if (batch.length < cardsPageSize) break;
+        cardsPage++;
+      }
 
       // 4) Map and enrich
-      let cards: MarketCard[] = (cardsRaw || []).map((row: any) => {
+      let cards: MarketCard[] = (allCards).map((row: any) => {
         const setData = Array.isArray(row.sets) ? row.sets[0] : row.sets;
         const printedTotal = setData?.printed_total ?? setData?.total ?? null;
         const displayNumber = formatCollectorNumber(row.number, printedTotal);
