@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -24,6 +24,55 @@ const PAGE_SIZE = 24;
 function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+/* Horizontally scrollable tabs with fade edges */
+const ScrollableTabs = ({ tab, setTab, setPage }: { tab: MarketTab; setTab: (t: MarketTab) => void; setPage: (p: number) => void }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setShowLeft(el.scrollLeft > 4);
+    setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = ref.current;
+    el?.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+    return () => { el?.removeEventListener("scroll", checkScroll); window.removeEventListener("resize", checkScroll); };
+  }, [checkScroll]);
+
+  return (
+    <div className="relative mb-4">
+      {showLeft && (
+        <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-background to-transparent" />
+      )}
+      <div ref={ref} className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => { setTab(t.key); setPage(0); }}
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              tab === t.key
+                ? "bg-primary/10 text-primary border border-primary/30"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <t.icon className="h-3.5 w-3.5" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {showRight && (
+        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-background to-transparent" />
+      )}
+    </div>
+  );
+};
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -123,7 +172,7 @@ const Marketplace = () => {
       {/* Rarity */}
       <div>
         <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Raridade</h4>
-        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto scrollbar-none">
           {rarities.map((r) => (
             <button
               key={r}
@@ -143,7 +192,7 @@ const Marketplace = () => {
       {/* Collection */}
       <div>
         <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Coleção</h4>
-        <div className="max-h-48 space-y-1 overflow-y-auto pr-1">
+        <div className="max-h-48 space-y-1 overflow-y-auto scrollbar-none pr-1">
           {sets.map((s: any) => (
             <label key={s.id} className="flex items-center gap-2 cursor-pointer py-0.5">
               <Checkbox
@@ -231,23 +280,8 @@ const Marketplace = () => {
           </Sheet>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-4 flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => { setTab(t.key); setPage(0); }}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                tab === t.key
-                  ? "bg-primary/10 text-primary border border-primary/30"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              }`}
-            >
-              <t.icon className="h-3.5 w-3.5" />
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Tabs with fade edges */}
+        <ScrollableTabs tab={tab} setTab={setTab} setPage={setPage} />
 
         <div className="flex gap-6">
           {/* Desktop sidebar filters */}
