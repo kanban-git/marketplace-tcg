@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import SearchAutocomplete from "@/components/SearchAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import {
@@ -66,14 +65,6 @@ const Header = () => {
           ))}
         </nav>
 
-        {!isHome && (
-          <div className="hidden flex-1 justify-center sm:flex lg:max-w-sm">
-            <SearchAutocomplete
-              variant="header"
-              onSearch={(q) => navigate(`/?q=${encodeURIComponent(q)}`)}
-            />
-          </div>
-        )}
 
         <div className="flex shrink-0 items-center gap-2">
           {user ? (
@@ -179,14 +170,6 @@ const Header = () => {
             ))}
           </nav>
 
-          {!isHome && (
-            <div className="mb-3">
-              <SearchAutocomplete
-                variant="header"
-                onSearch={(q) => { navigate(`/?q=${encodeURIComponent(q)}`); setMenuOpen(false); }}
-              />
-            </div>
-          )}
           {user ? (
             <Button
               size="sm"
