@@ -402,11 +402,14 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string
           avatar_url: string | null
           city: string | null
           cpf: string | null
           created_at: string
           display_name: string
+          document: string | null
+          full_name: string | null
           id: string
           phone: string | null
           reputation_score: number | null
@@ -415,11 +418,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_type?: string
           avatar_url?: string | null
           city?: string | null
           cpf?: string | null
           created_at?: string
           display_name?: string
+          document?: string | null
+          full_name?: string | null
           id: string
           phone?: string | null
           reputation_score?: number | null
@@ -428,11 +434,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_type?: string
           avatar_url?: string | null
           city?: string | null
           cpf?: string | null
           created_at?: string
           display_name?: string
+          document?: string | null
+          full_name?: string | null
           id?: string
           phone?: string | null
           reputation_score?: number | null
@@ -646,11 +655,14 @@ export type Database = {
       admin_list_profiles: {
         Args: never
         Returns: {
+          account_type: string
           avatar_url: string | null
           city: string | null
           cpf: string | null
           created_at: string
           display_name: string
+          document: string | null
+          full_name: string | null
           id: string
           phone: string | null
           reputation_score: number | null
