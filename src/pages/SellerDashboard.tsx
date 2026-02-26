@@ -47,7 +47,7 @@ const SellerDashboard = () => {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const { data: listings, isLoading } = useQuery({
-    queryKey: ["seller-listings", user?.id],
+    queryKey: ["my_listings", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
@@ -97,30 +97,49 @@ const SellerDashboard = () => {
 
   const toggleStatus = useMutation({
     mutationFn: async ({ id, currentListing }: { id: string; currentListing: any }) => {
-      if (currentListing.status === "active") {
-        // Manual pause: active -> paused
-        const { error } = await supabase
-          .from("listings")
-          .update({ status: "paused" } as any)
-          .eq("id", id)
-          .eq("seller_id", user!.id);
-        if (error) throw error;
-      } else if (currentListing.status === "paused" || currentListing.status === "paused_minimum") {
-        // Reactivate: paused/paused_minimum -> active (if approved) or pending_review
-        const newStatus = currentListing.is_approved ? "active" : "pending_review";
-        const { error } = await supabase
-          .from("listings")
-          .update({ status: newStatus } as any)
-          .eq("id", id)
-          .eq("seller_id", user!.id);
-        if (error) throw error;
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const action = currentListing.status === "active"
+        ? "pause"
+        : (currentListing.status === "paused" || currentListing.status === "paused_minimum" ? "activate" : null);
+
+      if (!action) {
+        throw new Error("Status inválido para alteração");
       }
-      // Recalculate: enforces paused_minimum if total < R$7
-      const { error: rpcError } = await supabase.rpc("recalculate_user_minimum_status", { p_user_id: user!.id });
-      if (rpcError) throw rpcError;
+
+      const { data, error } = await supabase.rpc("toggle_listing_status" as any, {
+        p_listing_id: id,
+        p_action: action,
+        p_user_id: user.id,
+      } as any);
+
+      if (error) throw error;
+      return data as any;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["seller-listings"] });
+    onSuccess: (result: any) => {
+      const updatedListing = result?.updatedListing;
+      const affectedListings = Array.isArray(result?.affectedListings) ? result.affectedListings : [];
+
+      if (updatedListing) {
+        queryClient.setQueryData(["my_listings", user?.id], (previous: any[] | undefined) => {
+          if (!previous) return previous;
+          const affectedMap = new Map(affectedListings.map((listing: any) => [listing.id, listing]));
+
+          return previous.map((listing) => {
+            const affectedListing = affectedMap.get(listing.id);
+            if (affectedListing && typeof affectedListing === "object") {
+              return { ...listing, ...(affectedListing as Record<string, unknown>) };
+            }
+            if (listing.id === updatedListing.id) {
+              return { ...listing, ...updatedListing };
+            }
+            return listing;
+          });
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["my_listings", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["seller_dashboard_stats", user?.id] });
       toast.success("Status atualizado!");
     },
     onError: (err: any) => {
