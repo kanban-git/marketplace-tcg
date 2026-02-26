@@ -30,6 +30,7 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
   pending_minimum: { label: "Pendente (mínimo)", variant: "outline" },
   rejected: { label: "Reprovado", variant: "destructive" },
   paused: { label: "Pausado", variant: "outline" },
+  paused_minimum: { label: "Pausado (mínimo)", variant: "destructive" },
   sold: { label: "Vendido", variant: "destructive" },
   cancelled: { label: "Cancelado", variant: "outline" },
 };
@@ -68,9 +69,11 @@ const SellerDashboard = () => {
   const approvedCount = all.filter((l: any) => l.is_approved && ["active", "pending_minimum"].includes(l.status)).length;
   const reviewValue = all.filter((l: any) => l.status === "pending_review").reduce((s: number, l: any) => s + l.price_cents, 0);
   const reviewCount = all.filter((l: any) => l.status === "pending_review").length;
+  const pausedValue = all.filter((l: any) => ["paused", "paused_minimum"].includes(l.status)).reduce((s: number, l: any) => s + l.price_cents, 0);
+  const pausedCount = all.filter((l: any) => ["paused", "paused_minimum"].includes(l.status)).length;
   const soldListings = all.filter((l: any) => l.status === "sold");
   const totalSold = soldListings.reduce((s: number, l: any) => s + l.price_cents, 0);
-  const pausedListings = all.filter((l: any) => l.status === "paused");
+  const pausedManualListings = all.filter((l: any) => l.status === "paused");
 
   const effectiveValue = all
     .filter((l: any) => ["active", "pending_review"].includes(l.status))
@@ -148,7 +151,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* KPIs */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <ShoppingBag className="h-4 w-4 text-primary" />
@@ -172,6 +175,14 @@ const SellerDashboard = () => {
             </div>
             <p className="font-display text-xl font-bold text-foreground">{formatPrice(reviewValue)}</p>
             <p className="text-[10px] text-muted-foreground">{reviewCount} anúncio{reviewCount !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <span className="text-xs">Valor pausado</span>
+            </div>
+            <p className="font-display text-xl font-bold text-foreground">{formatPrice(pausedValue)}</p>
+            <p className="text-[10px] text-muted-foreground">{pausedCount} anúncio{pausedCount !== 1 ? "s" : ""}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -199,7 +210,7 @@ const SellerDashboard = () => {
               <p className="text-xs text-muted-foreground mt-0.5">
                 Faltam {formatPrice(MIN_ACTIVATION_CENTS - effectiveValue)} para seus anúncios serem exibidos no marketplace. Cadastre novos anúncios para atingir o mínimo.
               </p>
-              {pausedListings.length > 0 && (
+              {pausedManualListings.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Ou ative anúncios pausados para somar ao valor total.
                 </p>
@@ -233,8 +244,9 @@ const SellerDashboard = () => {
                   { value: "active", label: "Ativos" },
                   { value: "pending_review", label: "Em análise" },
                   { value: "pending_minimum", label: "Pendente (mínimo)" },
-                  { value: "paused", label: "Pausados" },
-                  { value: "rejected", label: "Reprovados" },
+                   { value: "paused", label: "Pausados" },
+                   { value: "paused_minimum", label: "Pausado (mínimo)" },
+                   { value: "rejected", label: "Reprovados" },
                 ].map((tab) => (
                   <TabsTrigger
                     key={tab.value}
@@ -302,7 +314,14 @@ const SellerDashboard = () => {
                           <TableCell className="text-sm text-destructive">{formatPrice(listing.fee_amount)}</TableCell>
                           <TableCell className="text-sm text-primary font-medium">{formatPrice(listing.net_amount)}</TableCell>
                           <TableCell>
-                            <Badge variant={st.variant} className="text-[10px]">{st.label}</Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant={st.variant} className="text-[10px]">{st.label}</Badge>
+                              {listing.status === "paused_minimum" && (
+                                <span className="text-[9px] text-muted-foreground max-w-[120px] leading-tight" title="Seus anúncios foram pausados automaticamente porque o valor ativo ficou abaixo de R$7. Ative anúncios adicionais para voltar ao marketplace.">
+                                  ⓘ
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
