@@ -15,9 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
-  Search, ArrowLeft, ArrowRight, Camera, TrendingUp, ShoppingBag, Info, Check, Loader2, FlaskConical,
+  Search, ArrowLeft, ArrowRight, Camera, TrendingUp, ShoppingBag, Info, Check, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -81,7 +80,6 @@ const CreateListing = () => {
   const [priceBrl, setPriceBrl] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [notes, setNotes] = useState("");
-  const [isTest, setIsTest] = useState(false);
 
   const handleSearch = (val: string) => {
     setSearch(val);
@@ -179,7 +177,7 @@ const CreateListing = () => {
         finish,
         notes: notes || null,
         status: initialStatus,
-        is_test: isTest,
+        is_test: false,
         is_approved: false,
       } as any).select("id").single();
       if (error) throw error;
@@ -473,18 +471,6 @@ const CreateListing = () => {
                   </div>
                 </div>
               )}
-
-              {/* Test mode toggle */}
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div className="flex items-center gap-2">
-                  <FlaskConical className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Modo teste</p>
-                    <p className="text-xs text-muted-foreground">Não afeta analytics, rankings ou preços médios</p>
-                  </div>
-                </div>
-                <Switch checked={isTest} onCheckedChange={setIsTest} />
-              </div>
 
               <div>
                 <Label className="text-xs">Observações (opcional)</Label>
